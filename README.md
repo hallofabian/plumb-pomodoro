@@ -77,8 +77,10 @@ numerals, lowercase labels. A single amber lamp marks live state. Tokens and com
   beta 16 Hz, gamma 40 Hz), all generated on the Mac, or a custom stream URL
 - Blocking during work: hide apps, redirect websites (Safari/Chrome/Arc/Brave/Edge/Vivaldi/Opera)
 - Shortcuts automation on 7 events; CSV export
-- Import from Be Focused: reads its local data file (tasks, interval history, timer lengths),
-  offered on first launch when that file exists
+- Import from other apps: CSV exports from Toggl Track, Clockify and plumb are recognized;
+  any other timer app's CSV is matched by column name with an editable mapping and a preview.
+  Be Focused (its local data file, offered on first launch) and TomatoBar (its log) are read
+  directly. Re-importing the same file adds nothing.
 
 ## Integrations
 

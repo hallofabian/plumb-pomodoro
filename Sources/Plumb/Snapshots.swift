@@ -44,6 +44,19 @@ enum Snapshots {
         }
         for (name, view, size) in screens { capture(name, view, size, into: dir) }
 
+        // Import preview for a CSV from an app plumb has no preset for.
+        let sample = """
+        Started,Minutes,Category,Note
+        14.10.2026 09:05,25,Reading,Kahneman ch. 7
+        14.10.2026 09:40,25,Reading,
+        14.10.2026 10:15,50,Thesis,figures for 3.1
+        15.10.2026 08:50,25,Admin,inbox
+        """
+        if let csv = CSVImport(text: sample) {
+            let session = ImportSession(fileName: "focus-sessions-export.csv", source: .csv(csv))
+            capture("import-preview", { AnyView(ImportSheet(store: services.store, session: session)) }, NSSize(width: 640, height: 640), into: dir)
+        }
+
         // The same panel after stepping away for 12 minutes.
         engine.idleSeconds = { 12 * 60 }
         engine.tick()

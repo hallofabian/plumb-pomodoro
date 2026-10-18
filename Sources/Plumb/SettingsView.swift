@@ -371,6 +371,7 @@ private struct AutomationSettings: View {
 
 private struct SyncSettings: View {
     let services: Services
+    @State private var importSession: ImportSession?
 
     var body: some View {
         let sync = services.sync
@@ -413,12 +414,28 @@ private struct SyncSettings: View {
                 TERow(label: "Library") { Code("\(store.tasks.count) tasks · \(store.intervals.count) intervals") }
                 HStack(spacing: TE.s1) {
                     Button("export csv") { CSVExport.run(store: store) }.teButton()
-                    Button("import from be focused") { BeFocusedImport.runInteractive(store: store) }.teButton()
                     Button("show data folder") { NSWorkspace.shared.activateFileViewerSelecting([store.directory]) }.teButton()
                 }
                 .padding(.top, TE.s2)
             }
+            TESection(title: "import from other apps",
+                      note: "CSV exports are recognized from Toggl Track, Clockify and plumb; other timer apps' CSVs are matched by column name, and you can adjust the columns before importing. Importing the same file twice adds nothing.") {
+                TERow(label: "CSV export", detail: "Toggl Track, Clockify, Forest, Session, Focus To-Do, …") {
+                    Button("choose file") { importSession = ImportSession.choose() }.teButton()
+                }
+                TERow(label: "Be Focused", detail: "reads its data file on this Mac") {
+                    Button("import") { BeFocusedImport.runInteractive(store: store) }.teButton()
+                }
+                TERow(label: "TomatoBar", detail: TomatoBarImport.existingFile == nil ? "choose its TomatoBar.log" : "found its log on this Mac") {
+                    Button("import") {
+                        if let file = TomatoBarImport.existingFile { importSession = ImportSession.read(file) }
+                        else { importSession = ImportSession.choose() }
+                    }
+                    .teButton()
+                }
+            }
         }
+        .sheet(item: $importSession) { session in ImportSheet(store: store, session: session) }
     }
 }
 

@@ -651,3 +651,80 @@ private func tempDir() -> URL {
         #expect(MetadataReader.trackTitle(nil) == nil)
     }
 }
+
+@MainActor @Suite struct ImportTestsOtherApps {
+    @Test func csvParserHandlesQuotesSemicolonsAndCRLF() {
+        let rows = CSVImport.parse("a;b;c\r\n1;\"x; \"\"y\"\"\";3\r\n")
+        #expect(rows == [["a", "b", "c"], ["1", "x; \"y\"", "3"]])
+    }
+
+    @Test func togglDetailedReport() throws {
+        let csv = """
+        User,Email,Client,Project,Task,Description,Billable,Start date,Start time,End date,End time,Duration,Tags
+        Ana,a@example.com,,Thesis,,"Writing, ch. 3",No,2026-10-12,09:00:00,2026-10-12,09:50:00,00:50:00,
+        """
+        let file = try #require(CSVImport(text: csv))
+        #expect(file.format == .toggl)
+        let (records, failed) = file.records(source: "t")
+        #expect(failed == 0)
+        #expect(records.first?.task == "Thesis" && records.first?.note == "Writing, ch. 3")
+        #expect(records.first?.duration == TimeInterval(3000))
+    }
+
+    @Test func clockifyWithUSDatesAndAMPM() throws {
+        let csv = """
+        Project,Client,Description,Task,User,Group,Email,Tags,Billable,Start Date,Start Time,End Date,End Time,Duration (h),Duration (decimal)
+        Exam,,Practice,,Ana,,a@example.com,,No,10/13/2026,02:00:00 PM,10/13/2026,02:25:00 PM,00:25:00,0.42
+        """
+        let file = try #require(CSVImport(text: csv))
+        #expect(file.format == .clockify)
+        #expect(file.dayFirst == false && !file.dayOrderAmbiguous)
+        let record = try #require(file.records(source: "c").records.first)
+        #expect(Calendar.current.component(.hour, from: record.start) == 14)
+        #expect(Calendar.current.component(.day, from: record.start) == 13)
+        #expect(record.duration == TimeInterval(1500))
+    }
+
+    @Test func genericCSVIsMappedFromHeaderNames() throws {
+        let file = try #require(CSVImport(text: "Started,Minutes,Category,Note\n18.10.2026 08:30,25,Reading,ch 8\n"))
+        #expect(file.format == .genericCSV)
+        #expect(file.dayFirst)
+        let record = try #require(file.records(source: "g").records.first)
+        #expect(record.task == "Reading" && record.note == "ch 8" && record.duration == TimeInterval(1500))
+        #expect(Calendar.current.component(.month, from: record.start) == 10)
+    }
+
+    @Test func plumbExportRoundTripsAndReimportAddsNothing() throws {
+        let source = Store(directory: tempDir())
+        let task = source.addTask(title: "Thesis")
+        let start = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: Date().addingTimeInterval(-86400))!
+        source.addInterval(FocusInterval(taskID: task.id, phase: .work, start: start, duration: 3000, outcome: .completed))
+        source.addInterval(FocusInterval(taskID: task.id, phase: .shortBreak, start: start.addingTimeInterval(3000), duration: 600, outcome: .completed))
+        let file = try #require(CSVImport(text: CSVExport.csv(store: source)))
+        #expect(file.format == .plumb)
+        let records = file.records(source: "p").records
+        #expect(records.map(\.phase) == [.work, .shortBreak])
+
+        let target = Store(directory: tempDir())
+        let first = ImportApplier.apply(records, to: target)
+        #expect(first.intervals == 2 && first.newTasks == 1)
+        #expect(target.intervals.first { $0.phase == .work }?.start == start)
+        let again = ImportApplier.apply(records, to: target)
+        #expect(again.intervals == 0)
+        #expect(target.tasks.count == 1)
+    }
+
+    @Test func tomatoBarLog() {
+        let log = """
+        {"timestamp":1000,"type":"appstart"}
+        {"event":"startStop","fromState":"idle","timestamp":1010,"toState":"work","type":"transition"}
+        {"event":"timerFired","fromState":"work","timestamp":2510,"toState":"rest","type":"transition"}
+        {"event":"skipRest","fromState":"rest","timestamp":2600,"toState":"work","type":"transition"}
+        {"event":"startStop","fromState":"work","timestamp":3000,"toState":"idle","type":"transition"}
+        """
+        let records = TomatoBarImport.records(from: log)
+        #expect(records.map(\.phase) == [.work, .shortBreak, .work])
+        #expect(records.map(\.outcome) == [.completed, .skipped, .skipped])
+        #expect(records.map(\.duration) == [1500, 90, 400])
+    }
+}
