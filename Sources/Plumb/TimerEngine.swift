@@ -172,6 +172,23 @@ final class TimerEngine {
         changed()
     }
 
+    /// "+N min" from a break, always available: reopens the work interval that
+    /// just ended when possible, otherwise ends the break and starts N minutes of work.
+    func keepWorking(minutes: Int) {
+        now = clock()
+        if canExtend {
+            extend(minutes: minutes)
+            return
+        }
+        guard phase.isBreak else { return }
+        if elapsed >= 1 { record(.skipped, duration: elapsed) }
+        onEvent?(.finished(phase, .skipped))
+        phase = .work
+        resetPhase()
+        duration = TimeInterval(minutes * 60)
+        start()
+    }
+
     /// Adds minutes to the running work interval, or reopens the one that just
     /// ended so the extra time lands in the same interval.
     func extend(minutes: Int) {

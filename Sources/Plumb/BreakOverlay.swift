@@ -72,13 +72,13 @@ struct BreakCard: View {
                         dismiss()
                     }
                     .teButton()
-                    if engine.canExtend {
-                        Button("+\(services.store.settings.extendMinutes) min work") {
-                            engine.extend(minutes: services.store.settings.extendMinutes)
-                            dismiss()
-                        }
-                        .teButton()
+                    Button("+\(services.store.settings.extendMinutes) min, keep working") {
+                        engine.keepWorking(minutes: services.store.settings.extendMinutes)
+                        dismiss()
                     }
+                    .teButton()
+                    .help(engine.canExtend ? "Reopen the interval that just ended and add time"
+                                           : "End the break and work a little longer")
                     Button("dismiss") { dismiss() }.teButton(.text).keyboardShortcut(.cancelAction)
                 }
                 .padding(.top, TE.s2)

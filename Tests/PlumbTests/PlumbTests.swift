@@ -139,6 +139,25 @@ private func tempDir() -> URL {
         #expect(engine.round == 1)
     }
 
+    @Test func keepWorkingFromABreakAlwaysWorks() {
+        let (store, engine, clock) = makeEngine()
+        engine.start()
+        clock.now += 300
+        engine.skip() // no reopenable interval now
+        #expect(engine.phase == .shortBreak && !engine.canExtend)
+        engine.start()
+        clock.now += 60
+        engine.keepWorking(minutes: 5)
+        #expect(engine.phase == .work && engine.isRunning)
+        #expect(engine.duration == 5 * 60)
+        #expect(store.intervals.filter { $0.phase == .shortBreak }.first?.outcome == .skipped)
+        clock.now += 5 * 60
+        engine.tick()
+        let lastWork = store.intervals.last { $0.phase == .work }
+        #expect(lastWork?.duration == TimeInterval(300))
+        #expect(lastWork?.outcome == .completed)
+    }
+
     @Test func adjustIdleDuration() {
         let (_, engine, _) = makeEngine()
         engine.adjustIdleDuration(byMinutes: 3)

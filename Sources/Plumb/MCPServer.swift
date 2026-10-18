@@ -31,7 +31,7 @@ struct MCPServer {
              description: "Abandon the current interval and reset to a fresh work interval. Work of at least a minute is kept as skipped.",
              properties: [:]),
         Tool(name: "extend_interval", command: "extend",
-             description: "Add minutes to the running work interval, or reopen the one that ended in the last 10 minutes.",
+             description: "Add minutes to the running work interval. During a break: reopen the work interval that just ended, or end the break and work that many minutes.",
              properties: ["minutes": ["type": "integer", "minimum": 1, "maximum": 60]]),
         Tool(name: "list_tasks", command: "list_tasks",
              description: "List tasks with completed interval counts, estimates, due dates and work types.",

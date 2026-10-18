@@ -140,11 +140,12 @@ struct TimerPopover: View {
         HStack(spacing: TE.s1) {
             Button(primaryTitle, action: engine.toggle)
                 .teButton(.primary, expand: true)
-            if engine.canExtend {
-                Button("+\(store.settings.extendMinutes)") { engine.extend(minutes: store.settings.extendMinutes) }
+            if engine.canExtend || engine.phase.isBreak {
+                Button("+\(store.settings.extendMinutes)") { engine.keepWorking(minutes: store.settings.extendMinutes) }
                     .teButton()
                     .help(engine.phase == .work ? "Add \(store.settings.extendMinutes) min to this interval"
-                                                : "Reopen the interval that just ended and add \(store.settings.extendMinutes) min")
+                          : engine.canExtend ? "Reopen the interval that just ended and add \(store.settings.extendMinutes) min"
+                          : "End the break and work \(store.settings.extendMinutes) more min")
             }
             Button("skip", action: engine.skip)
                 .teButton()
@@ -179,7 +180,8 @@ struct TimerPopover: View {
         default:
             switch press.characters {
             case "s": engine.skip()
-            case "e", "+": engine.extend(minutes: store.settings.extendMinutes)
+            case "e", "+": engine.phase.isBreak ? engine.keepWorking(minutes: store.settings.extendMinutes)
+                                                : engine.extend(minutes: store.settings.extendMinutes)
             case "n": focus = .newTask
             default: return .ignored
             }

@@ -47,8 +47,13 @@ final class CommandCenter {
             engine.stop()
             return status()
         case "extend":
-            guard engine.canExtend else { throw CommandError("Nothing to extend: no work interval is running or just ended.") }
-            engine.extend(minutes: int(args["minutes"]) ?? store.settings.extendMinutes)
+            let minutes = int(args["minutes"]) ?? store.settings.extendMinutes
+            if engine.phase.isBreak {
+                engine.keepWorking(minutes: minutes)
+            } else {
+                guard engine.canExtend else { throw CommandError("Nothing to extend: start a work interval first.") }
+                engine.extend(minutes: minutes)
+            }
             return status()
         case "list_tasks":
             let includeCompleted = bool(args["include_completed"]) ?? false
