@@ -34,7 +34,8 @@ struct TimerPopover: View {
                 .padding(.horizontal, TE.s3)
                 .padding(.vertical, 12)
         }
-        .frame(width: 320)
+        .frame(minWidth: 320)
+        .fixedSize()
         .background(TE.canvas)
         .focusable()
         .focused($focus, equals: .panel)
@@ -51,19 +52,19 @@ struct TimerPopover: View {
         return VStack(alignment: .leading, spacing: TE.s1) {
             HStack(spacing: 6) {
                 LED(on: true)
-                Code("paused while away", color: TE.ink)
+                Code(L("paused while away"), color: TE.ink)
             }
-            Text("No input since \(since.formatted(date: .omitted, time: .shortened)), \(minutes) min ago. What should happen with that time?")
+            Text(L("No input since %@, %@ min ago. What should happen with that time?", since.timeText, "\(minutes)"))
                 .font(TE.body())
                 .foregroundStyle(TE.ink)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: TE.s1) {
-                Button("keep it") { engine.resolveAway(.keep) }.teButton(.primary)
-                    .help("Count the \(minutes) min as work and continue")
-                Button("drop it") { engine.resolveAway(.drop) }.teButton()
-                    .help("Ignore the time away and continue")
-                Button("end there") { engine.resolveAway(.end) }.teButton()
-                    .help("Finish the interval at \(since.formatted(date: .omitted, time: .shortened))")
+                Button(L("keep it")) { engine.resolveAway(.keep) }.teButton(.primary)
+                    .help(L("Count the %@ min as work and continue", "\(minutes)"))
+                Button(L("drop it")) { engine.resolveAway(.drop) }.teButton()
+                    .help(L("Ignore the time away and continue"))
+                Button(L("end there")) { engine.resolveAway(.end) }.teButton()
+                    .help(L("Finish the interval at %@", since.timeText))
             }
         }
     }
@@ -76,13 +77,14 @@ struct TimerPopover: View {
                 LED(on: engine.isRunning)
                 Code(statusLabel)
                 if engine.status == .idle {
-                    SquareStep("−") { engine.adjustIdleDuration(byMinutes: -1) }
-                        .help("Shorter next interval (or scroll on the menu bar icon)")
-                    SquareStep("+") { engine.adjustIdleDuration(byMinutes: 1) }
-                        .help("Longer next interval (or scroll on the menu bar icon)")
+                    SquareStep("−", label: L("Shorter next interval (or scroll on the menu bar icon)")) { engine.adjustIdleDuration(byMinutes: -1) }
+                        .help(L("Shorter next interval (or scroll on the menu bar icon)"))
+                    SquareStep("+", label: L("Longer next interval (or scroll on the menu bar icon)")) { engine.adjustIdleDuration(byMinutes: 1) }
+                        .help(L("Longer next interval (or scroll on the menu bar icon)"))
                 }
             }
             Text(formatClock(engine.remaining))
+                .accessibilityLabel(L("%@ remaining", spokenDuration(engine.remaining)))
                 .font(TE.numeral(72))
                 .foregroundStyle(engine.status == .paused ? TE.inkSecondary : TE.ink)
                 .padding(.leading, -4)
@@ -98,8 +100,8 @@ struct TimerPopover: View {
 
     private func notePrompt(_ interval: FocusInterval) -> some View {
         VStack(alignment: .leading, spacing: TE.s1) {
-            Code("what did you get done? · \(store.title(for: interval.taskID))")
-            TextField("", text: $note, prompt: Text("one line, then return").foregroundStyle(TE.inkMuted))
+            Code(L("what did you get done? · %@", "\(store.title(for: interval.taskID))"))
+            TextField("", text: $note, prompt: Text(L("one line, then return")).foregroundStyle(TE.inkMuted))
                 .teField()
                 .focused($focus, equals: .note)
                 .onSubmit {
@@ -112,15 +114,15 @@ struct TimerPopover: View {
 
     private var taskArea: some View {
         VStack(alignment: .leading, spacing: TE.s1) {
-            Code("task")
+            Code(L("task"))
             TEMenu(selection: Binding(get: { engine.taskID }, set: { engine.select(taskID: $0) }),
                    options: taskOptions, minWidth: 274)
-            TextField("", text: $newTask, prompt: Text("add a task and press return").foregroundStyle(TE.inkMuted))
+            TextField("", text: $newTask, prompt: Text(L("add a task and press return")).foregroundStyle(TE.inkMuted))
                 .teField()
                 .focused($focus, equals: .newTask)
                 .onSubmit(addTask)
             HStack(spacing: TE.s1) {
-                Code("sound")
+                Code(L("sound"))
                 if services.ambient.state == .playing { LED(on: true, size: 6) }
                 Spacer()
                 TEMenu(selection: Binding(get: { store.settings.ambientSource },
@@ -141,31 +143,33 @@ struct TimerPopover: View {
             Button(primaryTitle, action: engine.toggle)
                 .teButton(.primary, expand: true)
             if engine.canExtend || engine.phase.isBreak {
-                Button("+\(store.settings.extendMinutes)") { engine.keepWorking(minutes: store.settings.extendMinutes) }
+                Button("+" + String(store.settings.extendMinutes)) { engine.keepWorking(minutes: store.settings.extendMinutes) }
                     .teButton()
-                    .help(engine.phase == .work ? "Add \(store.settings.extendMinutes) min to this interval"
-                          : engine.canExtend ? "Reopen the interval that just ended and add \(store.settings.extendMinutes) min"
-                          : "End the break and work \(store.settings.extendMinutes) more min")
+                    .help(engine.phase == .work ? L("Add %@ min to this interval", "\(store.settings.extendMinutes)")
+                          : engine.canExtend ? L("Reopen the interval that just ended and add %@ min", "\(store.settings.extendMinutes)")
+                          : L("End the break and work %@ more min", "\(store.settings.extendMinutes)"))
             }
-            Button("skip", action: engine.skip)
+            Button(L("skip"), action: engine.skip)
                 .teButton()
-                .help("End the \(engine.phase.label) now and move on")
-            Button("stop", action: engine.stop)
+                .fixedSize()
+                .help(L("End the %@ now and move on", "\(engine.phase.label)"))
+            Button(L("stop"), action: engine.stop)
                 .teButton()
+                .fixedSize()
                 .disabled(engine.status == .idle)
-                .help(engine.stopKeepsMinutes.map { "Reset to a fresh work interval; keeps \($0) min as skipped" }
-                      ?? "Reset to a fresh work interval; under a minute is not kept")
+                .help(engine.stopKeepsMinutes.map { L("Reset to a fresh work interval; keeps %@ min as skipped", "\($0)") }
+                      ?? L("Reset to a fresh work interval; under a minute is not kept"))
         }
     }
 
     private var footer: some View {
         HStack(spacing: TE.s2) {
-            Button("tasks") { Windows.shared.show(.tasks) }.teButton(.text).fixedSize()
-            Button("reports") { Windows.shared.show(.reports) }.teButton(.text).fixedSize()
-            Button("settings") { Windows.shared.show(.settings) }.teButton(.text).fixedSize()
+            Button(L("tasks")) { Windows.shared.show(.tasks) }.teButton(.text).fixedSize()
+            Button(L("reports")) { Windows.shared.show(.reports) }.teButton(.text).fixedSize()
+            Button(L("settings")) { Windows.shared.show(.settings) }.teButton(.text).fixedSize()
             Spacer(minLength: 4)
             SyncMark(sync: services.sync)
-            Button("quit") { NSApp.terminate(nil) }.teButton(.text).fixedSize()
+            Button(L("quit")) { NSApp.terminate(nil) }.teButton(.text).fixedSize()
         }
     }
 
@@ -221,17 +225,17 @@ struct TimerPopover: View {
 
     private var primaryTitle: String {
         switch engine.status {
-        case .running: "pause"
-        case .paused: "resume"
-        case .idle: engine.phase == .work ? "start work" : "start break"
+        case .running: L("pause")
+        case .paused: L("resume")
+        case .idle: engine.phase == .work ? L("start work") : L("start break")
         }
     }
 
     private var statusLabel: String {
         switch engine.status {
-        case .running: "running"
-        case .paused: engine.awaySince != nil ? "away" : "paused"
-        case .idle: "\(Int(engine.duration / 60)) min"
+        case .running: L("running")
+        case .paused: engine.awaySince != nil ? L("away") : L("paused")
+        case .idle: L("%@ min", "\(Int(engine.duration / 60))")
         }
     }
 
@@ -248,10 +252,12 @@ struct TimerPopover: View {
 /// 16 pt square button with a single glyph.
 struct SquareStep: View {
     let symbol: String
+    let label: String
     let action: () -> Void
 
-    init(_ symbol: String, action: @escaping () -> Void) {
+    init(_ symbol: String, label: String, action: @escaping () -> Void) {
         self.symbol = symbol
+        self.label = label
         self.action = action
     }
 
@@ -265,6 +271,7 @@ struct SquareStep: View {
         }
         .buttonStyle(.plain)
         .foregroundStyle(TE.ink)
+        .accessibilityLabel(label)
     }
 }
 
@@ -278,9 +285,9 @@ private struct SyncMark: View {
             HStack(spacing: 3) {
                 if sync.lastError != nil {
                     LED(on: true, size: 6)
-                    Code("sync", color: TE.ink)
+                    Code(L("sync"), color: TE.ink)
                 } else {
-                    Code("↻ " + (sync.lastSync?.formatted(date: .omitted, time: .shortened) ?? "…"))
+                    Code("↻ " + (sync.lastSync?.timeText ?? "…"))
                 }
             }
             .lineLimit(1)
@@ -291,8 +298,8 @@ private struct SyncMark: View {
     }
 
     private var helpText: String {
-        if let error = sync.lastError { return "Sync failed: \(error)" }
-        let when = sync.lastSync.map { "Last synced \($0.formatted(date: .omitted, time: .shortened))" } ?? "Syncing"
+        if let error = sync.lastError { return L("Sync failed: %@", error) }
+        let when = sync.lastSync.map { L("Last synced %@", $0.timeText) } ?? L("Syncing")
         return "\(when) · \(sync.folderURL?.path ?? "")"
     }
 }
@@ -316,6 +323,9 @@ private struct ProgressBar: View {
             .animation(.linear(duration: 0.3), value: value)
         }
         .frame(height: 9)
+        .accessibilityElement()
+        .accessibilityLabel(L("Progress"))
+        .accessibilityValue(value.formatted(.percent.precision(.fractionLength(0)).locale(AppLanguage.locale)))
     }
 }
 
@@ -326,7 +336,7 @@ private struct RoundMeter: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Code("cycle")
+            Code(L("cycle"))
             ForEach(0..<total, id: \.self) { i in
                 Rectangle()
                     .fill(i < done ? TE.ink : Color.clear)
@@ -334,7 +344,9 @@ private struct RoundMeter: View {
                     .frame(width: 8, height: 8)
             }
         }
-        .help("\(done) of \(total) work intervals until the long break")
+        .help(L("%@ of %@ work intervals until the long break", "\(done)", "\(total)"))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(L("%@ of %@ work intervals until the long break", "\(done)", "\(total)"))
     }
 }
 
@@ -347,14 +359,14 @@ private struct DailyGoal: View {
         let target = store.todayTarget
         let streak = store.streak()
         HStack(spacing: 4) {
-            Code("today \(store.todayProgress)",
+            Code(L("today %@", "\(store.todayProgress)"),
                  color: store.todayWorkCount >= target ? TE.ink : TE.inkSecondary)
-            SquareStep("−") { services.commands.setTodayGoal(max(1, target - 1)) }.disabled(target <= 1)
-            SquareStep("+") { services.commands.setTodayGoal(min(30, target + 1)) }.disabled(target >= 30)
+            SquareStep("−", label: L("Lower today's goal")) { services.commands.setTodayGoal(max(1, target - 1)) }.disabled(target <= 1)
+            SquareStep("+", label: L("Raise today's goal")) { services.commands.setTodayGoal(min(30, target + 1)) }.disabled(target >= 30)
             if streak > 1 {
-                Code("· \(streak)d", color: TE.ink).help("\(streak) days in a row at goal")
+                Code("· " + L("%@d", "\(streak)"), color: TE.ink).help(L("%@ days in a row at goal", "\(streak)"))
             }
         }
-        .help("Today's goal: \(target) work intervals")
+        .help(L("Today's goal: %@ work intervals", "\(target)"))
     }
 }

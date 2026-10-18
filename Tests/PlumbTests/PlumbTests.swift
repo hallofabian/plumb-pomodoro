@@ -728,3 +728,70 @@ private func tempDir() -> URL {
         #expect(records.map(\.duration) == [1500, 90, 400])
     }
 }
+
+@Suite struct TranslationTests {
+    /// Every literal passed to L(...) in the app's source.
+    private func sourceKeys() throws -> [String] {
+        let sources = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .appendingPathComponent("../../Sources/Plumb").standardized
+        let files = try FileManager.default.contentsOfDirectory(at: sources, includingPropertiesForKeys: nil)
+            .filter { $0.pathExtension == "swift" }
+        let pattern = try NSRegularExpression(pattern: #"\bL\("((?:[^"\\]|\\.)*)""#)
+        var keys: [String] = []
+        for file in files {
+            let text = try String(contentsOf: file, encoding: .utf8)
+            for match in pattern.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
+                // Turn the Swift source form back into the runtime string.
+                let raw = String(text[Range(match.range(at: 1), in: text)!])
+                keys.append(raw.replacingOccurrences(of: "\\\"", with: "\"").replacingOccurrences(of: "\\\\", with: "\\"))
+            }
+        }
+        return keys
+    }
+
+    private func placeholders(_ s: String) -> [String] {
+        s.components(separatedBy: "%%").joined().components(separatedBy: "%").dropFirst().map { String($0.prefix(1)) }
+    }
+
+    @Test func everyInterfaceTextHasAGermanTranslation() throws {
+        let keys = try sourceKeys()
+        #expect(keys.count > 300)
+        let missing = Set(keys).filter { Translations.de[$0] == nil }.sorted()
+        #expect(missing.isEmpty, "Missing German: \(missing)")
+    }
+
+    @Test func translationsKeepTheirPlaceholders() {
+        for (english, german) in Translations.de {
+            #expect(placeholders(english) == placeholders(german), "\(english) → \(german)")
+            #expect(english.contains("%%") == german.contains("%%"), "\(english)")
+        }
+    }
+
+    @Test func namesTranslatedFromRawValuesExist() {
+        for tab in SettingsTab.allCases where tab != .sync {
+            #expect(Translations.de[tab.rawValue] != nil, "\(tab)")
+        }
+        for period in ReportPeriod.allCases {
+            #expect(Translations.de[period.rawValue] != nil, "\(period)")
+        }
+    }
+
+    @Test func germanAndAmericanFormats() {
+        let date = DateComponents(calendar: .current, year: 2026, month: 10, day: 18, hour: 14, minute: 30).date!
+        AppLanguage.$override.withValue(.de) {
+            #expect(L("today %@", "3/8") == "heute 3/8")
+            #expect(numberText(1.4) == "1,4")
+            #expect(date.timeText == "14:30")
+            #expect(date.dayMonthText == "18. Okt.")
+            #expect(formatDuration(150 * 60) == "2 h 30 min")
+        }
+        AppLanguage.$override.withValue(.en) {
+            #expect(L("today %@", "3/8") == "today 3/8")
+            #expect(numberText(1.4) == "1.4")
+            #expect(date.timeText.replacingOccurrences(of: "\u{202F}", with: " ") == "2:30 PM") // ICU uses a narrow no-break space
+            #expect(date.dayMonthText == "Oct 18")
+            #expect(formatDuration(150 * 60) == "2h 30m")
+        }
+    }
+}
+

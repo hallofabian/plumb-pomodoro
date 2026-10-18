@@ -22,7 +22,8 @@ final class BreakOverlay {
             window.isReleasedWhenClosed = false
             window.onEscape = { [weak self] in self?.hide() }
             let main = screen == NSScreen.main
-            window.contentView = NSHostingView(rootView: BreakCard(services: services, showControls: main) { [weak self] in self?.hide() })
+            window.contentView = NSHostingView(rootView: BreakCard(services: services, showControls: main) { [weak self] in self?.hide() }
+                .environment(\.locale, AppLanguage.locale))
             window.setFrame(screen.frame, display: true)
             window.orderFrontRegardless()
             if main { window.makeKey() }
@@ -53,33 +54,34 @@ struct BreakCard: View {
         VStack(alignment: .leading, spacing: TE.s3) {
             HStack(spacing: 6) {
                 LED(on: engine.isRunning)
-                Code(engine.isRunning ? "\(engine.phase.label) running" : engine.phase.label, color: TE.ink)
+                Code(engine.isRunning ? L("%@ running", "\(engine.phase.label)") : engine.phase.label, color: TE.ink)
             }
             Text(formatClock(engine.remaining))
+                .accessibilityLabel(L("%@ remaining", spokenDuration(engine.remaining)))
                 .font(TE.numeral(160))
                 .foregroundStyle(TE.ink)
                 .padding(.leading, -8)
-            Text("Step away from the screen. Stand up, look into the distance, drink some water.")
+            Text(L("Step away from the screen. Stand up, look into the distance, drink some water."))
                 .font(TE.heading())
                 .foregroundStyle(TE.inkSecondary)
             if showControls {
                 HStack(spacing: TE.s1) {
                     if engine.status == .idle {
-                        Button("start break") { engine.start() }.teButton(.primary)
+                        Button(L("start break")) { engine.start() }.teButton(.primary)
                     }
-                    Button("end break, back to work") {
+                    Button(L("end break, back to work")) {
                         engine.skip()
                         dismiss()
                     }
                     .teButton()
-                    Button("+\(services.store.settings.extendMinutes) min, keep working") {
+                    Button(L("+%@ min, keep working", "\(services.store.settings.extendMinutes)")) {
                         engine.keepWorking(minutes: services.store.settings.extendMinutes)
                         dismiss()
                     }
                     .teButton()
-                    .help(engine.canExtend ? "Reopen the interval that just ended and add time"
-                                           : "End the break and work a little longer")
-                    Button("dismiss") { dismiss() }.teButton(.text).keyboardShortcut(.cancelAction)
+                    .help(engine.canExtend ? L("Reopen the interval that just ended and add time")
+                                           : L("End the break and work a little longer"))
+                    Button(L("dismiss")) { dismiss() }.teButton(.text).keyboardShortcut(.cancelAction)
                 }
                 .padding(.top, TE.s2)
             }

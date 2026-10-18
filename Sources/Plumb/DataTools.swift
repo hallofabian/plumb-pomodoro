@@ -59,7 +59,7 @@ enum BeFocusedImport {
         var url = defaultFile
         if !FileManager.default.isReadableFile(atPath: url.path) {
             let panel = NSOpenPanel()
-            panel.message = "Choose Be Focused's data file (SANDBOX_ITEM_v_6.plist)"
+            panel.message = L("Choose Be Focused's data file (SANDBOX_ITEM_v_6.plist)")
             panel.directoryURL = defaultFile.deletingLastPathComponent()
             panel.allowedContentTypes = [.propertyList]
             NSApp.activate(ignoringOtherApps: true)
@@ -69,12 +69,12 @@ enum BeFocusedImport {
         let alert = NSAlert()
         do {
             let summary = try importFile(url, into: store, importSettings: true)
-            alert.messageText = "Import finished"
-            alert.informativeText = "\(summary.tasks) tasks and \(summary.intervals) intervals imported"
-                + (summary.settingsImported ? ", timer durations taken over." : ".")
-                + " Importing again is safe; existing records are updated, not duplicated."
+            alert.messageText = L("Import finished")
+            alert.informativeText = L("%@ tasks and %@ intervals imported", "\(summary.tasks)", "\(summary.intervals)")
+                + (summary.settingsImported ? L(", timer durations taken over.") : ".")
+                + L(" Importing again is safe; existing records are updated, not duplicated.")
         } catch {
-            alert.messageText = "Import failed"
+            alert.messageText = L("Import failed")
             alert.informativeText = error.localizedDescription
         }
         NSApp.activate(ignoringOtherApps: true)
@@ -133,7 +133,7 @@ enum BeFocusedImport {
             let due = (t["dueDate"] as? Double).flatMap { $0 > 0 ? Date(timeIntervalSince1970: $0) : nil }
             let estimate = (t["expectedIntervals"] as? Int).flatMap { $0 > 0 ? $0 : nil }
             lib.tasks.append(FocusTask(
-                id: id, title: t["title"] as? String ?? "Untitled", note: t["note"] as? String ?? "",
+                id: id, title: t["title"] as? String ?? L("Untitled"), note: t["note"] as? String ?? "",
                 estimatedIntervals: estimate, dueDate: due,
                 completedAt: completed ? (completedAt ?? created) : nil,
                 createdAt: created, sortIndex: Double(index), updatedAt: importStamp

@@ -7,6 +7,9 @@ enum ReportPeriod: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// Shown in the interface; the raw value stays English for the CLI and MCP.
+    var title: String { L(rawValue) }
+
     func range(customStart: Date, customEnd: Date, earliest: Date) -> ClosedRange<Date> {
         let cal = Calendar.current
         let now = Date()
@@ -52,16 +55,16 @@ struct ReportsView: View {
             figures(report)
             if report.work.isEmpty {
                 VStack(alignment: .leading, spacing: TE.s1) {
-                    Code("no data")
-                    Text("There are no completed intervals for the selected period.")
+                    Code(L("no data"))
+                    Text(L("There are no completed intervals for the selected period."))
                         .font(TE.body()).foregroundStyle(TE.inkSecondary)
                 }
             } else {
-                TESection(title: inHours ? "hours per \(report.bucket.name)" : "intervals per \(report.bucket.name)",
-                          note: "Hover a bar for the breakdown by task.") {
+                TESection(title: inHours ? L("hours per %@", "\(report.bucket.name)") : L("intervals per %@", "\(report.bucket.name)"),
+                          note: L("Hover a bar for the breakdown by task.")) {
                     timeline(report).frame(height: 240).padding(.top, TE.s2)
                 }
-                TESection(title: "by task") { byTask(report) }
+                TESection(title: L("by task")) { byTask(report) }
             }
         }
         .frame(minWidth: 640, minHeight: 480)
@@ -74,14 +77,14 @@ struct ReportsView: View {
 
     private var filters: some View {
         HStack(spacing: TE.s1) {
-            TEMenu(selection: $period, options: ReportPeriod.allCases.map { ($0, $0.rawValue) })
+            TEMenu(selection: $period, options: ReportPeriod.allCases.map { ($0, $0.title) })
             if period == .custom {
                 DatePicker("from", selection: $customStart, displayedComponents: .date).labelsHidden().datePickerStyle(.field)
-                Code("to")
+                Code(L("to"))
                 DatePicker("to", selection: $customEnd, displayedComponents: .date).labelsHidden().datePickerStyle(.field)
             }
             Spacer()
-            TESegmented(selection: $inHours, options: [(true, "hours"), (false, "intervals")]).frame(width: 180)
+            TESegmented(selection: $inHours, options: [(true, L("hours")), (false, L("intervals"))]).frame(width: 180)
         }
     }
 
@@ -89,19 +92,19 @@ struct ReportsView: View {
         VStack(spacing: 0) {
             Rule(strong: true)
             HStack(alignment: .top, spacing: 0) {
-                cell(Figure(label: "work time", value: formatDuration(r.totalSeconds), size: 34))
+                cell(Figure(label: L("work time"), value: formatDuration(r.totalSeconds), size: 34))
                 Rule(vertical: true)
-                cell(Figure(label: "intervals", value: "\(r.completedCount)", size: 34))
+                cell(Figure(label: L("intervals"), value: "\(r.completedCount)", size: 34))
                 Rule(vertical: true)
-                cell(Figure(label: "skipped", value: "\(r.skippedCount)", size: 34))
+                cell(Figure(label: L("skipped"), value: "\(r.skippedCount)", size: 34))
                 Rule(vertical: true)
-                cell(Figure(label: "tasks done", value: "\(r.completedTasks)", size: 34))
+                cell(Figure(label: L("tasks done"), value: "\(r.completedTasks)", size: 34))
                 Rule(vertical: true)
-                cell(Figure(label: "streak", value: "\(store.streak())d", size: 34))
-                    .help("Days in a row at your daily goal; rest days (goal 0) don't break it.")
+                cell(Figure(label: L("streak"), value: L("%@d", "\(store.streak())"), size: 34))
+                    .help(L("Days in a row at your daily goal; rest days (goal 0) don't break it."))
                 Rule(vertical: true)
-                cell(Figure(label: "estimates", value: Forecast.calibration(store: store).map { String(format: "%.1f×", $0.median) } ?? "–", size: 34))
-                    .help("Actual ÷ estimated intervals, median over all completed tasks with an estimate. Needs 3 such tasks.")
+                cell(Figure(label: L("estimates"), value: Forecast.calibration(store: store).map { numberText($0.median) + "×" } ?? "–", size: 34))
+                    .help(L("Actual ÷ estimated intervals, median over all completed tasks with an estimate. Needs 3 such tasks."))
             }
             .fixedSize(horizontal: false, vertical: true)
             Rule()
@@ -116,14 +119,16 @@ struct ReportsView: View {
         let selectedStart = selectedBucket.flatMap(r.bucketStart)
         return Chart {
             ForEach(r.buckets, id: \.date) { b in
-                BarMark(x: .value("Date", b.date, unit: r.bucket.component), y: .value("Amount", b.value))
+                BarMark(x: .value(L("Date"), b.date, unit: r.bucket.component), y: .value(inHours ? L("Hours") : L("Intervals"), b.value))
                     .foregroundStyle(b.date == selectedStart ? TE.signal : TE.ink)
+                    .accessibilityLabel(b.date.text(r.bucket.labelFormat))
+                    .accessibilityValue(inHours ? L("%@ h", numberText(b.value)) : "\(Int(b.value))")
             }
             if let selectedStart, let bucket = r.buckets.first(where: { $0.date == selectedStart }) {
-                RuleMark(x: .value("Date", selectedStart, unit: r.bucket.component))
+                RuleMark(x: .value(L("Date"), selectedStart, unit: r.bucket.component))
                     .foregroundStyle(.clear)
                     .annotation(position: .top, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
-                        Tooltip(title: selectedStart.formatted(r.bucket.labelFormat), total: bucket.value,
+                        Tooltip(title: selectedStart.text(r.bucket.labelFormat), total: bucket.value,
                                 rows: r.breakdown(at: selectedStart), inHours: inHours)
                     }
             }
@@ -157,11 +162,12 @@ struct ReportsView: View {
                             .frame(maxHeight: .infinity)
                     }
                     .frame(height: 12)
-                    Text(inHours ? String(format: "%.1f h", row.value) : "\(Int(row.value))")
+                    Text(inHours ? L("%@ h", numberText(row.value)) : "\(Int(row.value))")
                         .font(TE.body(12).monospacedDigit()).foregroundStyle(TE.inkSecondary)
                         .frame(width: 64, alignment: .trailing)
                 }
                 .padding(.vertical, 8)
+                .accessibilityElement(children: .combine)
                 Rule()
             }
         }
@@ -188,7 +194,7 @@ private struct Tooltip: View {
             }
             if rows.count > 1 {
                 Rule()
-                HStack { Text("total"); Spacer(); Text(format(total)).monospacedDigit() }
+                HStack { Text(L("total")); Spacer(); Text(format(total)).monospacedDigit() }
                     .font(TE.body(11)).foregroundStyle(TE.ink)
             }
         }
@@ -198,7 +204,7 @@ private struct Tooltip: View {
         .overlay(Rectangle().strokeBorder(TE.ink, lineWidth: 1))
     }
 
-    private func format(_ v: Double) -> String { inHours ? String(format: "%.1f h", v) : "\(Int(v))" }
+    private func format(_ v: Double) -> String { inHours ? L("%@ h", numberText(v)) : "\(Int(v))" }
 }
 
 /// Aggregates intervals for the reports window.
@@ -207,7 +213,7 @@ private struct Report {
         case day, week, month
 
         var component: Calendar.Component { self == .day ? .day : (self == .week ? .weekOfYear : .month) }
-        var name: String { self == .day ? "day" : (self == .week ? "week" : "month") }
+        var name: String { self == .day ? L("day") : (self == .week ? L("week") : L("month")) }
         var labelFormat: Date.FormatStyle {
             switch self {
             case .day: .dateTime.weekday(.abbreviated).day().month(.abbreviated)
@@ -266,7 +272,7 @@ private struct Report {
     func breakdown(at start: Date) -> [(String, Double)] {
         let rows = (byBucketAndTask[start] ?? [:]).sorted { $0.value > $1.value }
         var result = rows.prefix(4).map { ($0.key, $0.value) }
-        if rows.count > 4 { result.append(("\(rows.count - 4) more", rows.dropFirst(4).reduce(0) { $0 + $1.value })) }
+        if rows.count > 4 { result.append((L("%@ more", "\(rows.count - 4)"), rows.dropFirst(4).reduce(0) { $0 + $1.value })) }
         return result
     }
 }

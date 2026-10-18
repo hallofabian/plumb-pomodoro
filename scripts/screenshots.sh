@@ -10,7 +10,7 @@ fi
 swift build
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
-PLUMB_DATA_DIR="$TMP/data" .build/debug/Plumb --render-snapshots "$TMP/shots" -AppleLocale en_GB -AppleLanguages '(en)'
+PLUMB_DATA_DIR="$TMP/data" .build/debug/Plumb --render-snapshots "$TMP/shots" -AppleLocale en_US -AppleLanguages '(en-US)'
 mkdir -p docs/screenshots
 for name in panel panel-dark panel-away today task-forecast reports reports-dark break-card-dark settings-sounds settings-blocking; do
   cp "$TMP/shots/$name.png" docs/screenshots/

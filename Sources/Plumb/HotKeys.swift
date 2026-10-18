@@ -56,7 +56,7 @@ final class HotKeyCenter {
     }
 
     private static let specialKeyNames: [Int: String] = [
-        kVK_Space: "Space", kVK_Return: "↩", kVK_Tab: "⇥", kVK_LeftArrow: "←", kVK_RightArrow: "→",
+        kVK_Space: L("Space"), kVK_Return: "↩", kVK_Tab: "⇥", kVK_LeftArrow: "←", kVK_RightArrow: "→",
         kVK_UpArrow: "↑", kVK_DownArrow: "↓", kVK_F1: "F1", kVK_F2: "F2", kVK_F3: "F3", kVK_F4: "F4",
         kVK_F5: "F5", kVK_F6: "F6", kVK_F7: "F7", kVK_F8: "F8", kVK_F9: "F9", kVK_F10: "F10",
         kVK_F11: "F11", kVK_F12: "F12",
@@ -72,15 +72,15 @@ struct HotKeyRecorder: View {
 
     var body: some View {
         HStack(spacing: TE.s1) {
-            Button(recording ? "type shortcut…" : (hotKey?.display ?? "record")) {
+            Button(recording ? L("type shortcut…") : (hotKey?.display ?? L("record"))) {
                 recording ? stop() : begin()
             }
             .teButton(recording ? .primary : .secondary)
             .frame(minWidth: 120, alignment: .trailing)
             if hotKey != nil, !recording {
-                Button("clear") { hotKey = nil; onChange() }
+                Button(L("clear")) { hotKey = nil; onChange() }
                     .teButton(.text)
-                    .help("Remove shortcut")
+                    .help(L("Remove shortcut"))
             }
         }
         .onDisappear(perform: stop)

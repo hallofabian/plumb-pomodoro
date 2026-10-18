@@ -71,6 +71,7 @@ struct Rule: View {
         Rectangle()
             .fill(strong ? TE.ink : TE.hairline)
             .frame(width: vertical ? 1 : nil, height: vertical ? nil : 1)
+            .accessibilityHidden(true)
     }
 }
 
@@ -85,7 +86,8 @@ struct Code: View {
     }
 
     var body: some View {
-        Text(text.uppercased()).font(TE.code).tracking(1.2).foregroundStyle(color)
+        Text(text.uppercased(with: AppLanguage.locale)).font(TE.code).tracking(1.2).foregroundStyle(color)
+            .accessibilityLabel(text)
     }
 }
 
@@ -129,7 +131,7 @@ struct TERow<Control: View>: View {
                     }
                 }
                 Spacer(minLength: TE.s2)
-                control
+                control.environment(\.controlLabel, label)
             }
             .padding(.vertical, 10)
             Rule()
@@ -161,6 +163,37 @@ struct LED: View {
             .fill(on ? TE.signal : Color.clear)
             .overlay(Rectangle().strokeBorder(on ? TE.signal : TE.inkMuted, lineWidth: 1))
             .frame(width: size, height: size)
+            .accessibilityHidden(true)
+    }
+}
+
+// MARK: - Accessibility
+
+private struct ControlLabelKey: EnvironmentKey {
+    static let defaultValue: String? = nil
+}
+
+extension EnvironmentValues {
+    /// The row label around a control, so VoiceOver can say what it adjusts.
+    var controlLabel: String? {
+        get { self[ControlLabelKey.self] }
+        set { self[ControlLabelKey.self] = newValue }
+    }
+}
+
+extension View {
+    /// Applies the surrounding row's label, or `fallback`, as the VoiceOver label.
+    func controlAccessibilityLabel(_ label: String?) -> some View {
+        modifier(ControlLabelModifier(fallback: label))
+    }
+}
+
+private struct ControlLabelModifier: ViewModifier {
+    let fallback: String?
+    @Environment(\.controlLabel) private var label
+
+    func body(content: Content) -> some View {
+        if let text = label ?? fallback { content.accessibilityLabel(text) } else { content }
     }
 }
 
@@ -250,6 +283,9 @@ struct TEToggleStyle: ToggleStyle {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityRepresentation {
+            Toggle(isOn: configuration.$isOn) { configuration.label }
+        }
     }
 }
 
@@ -261,7 +297,7 @@ struct TEToggleRow: View {
 
     var body: some View {
         TERow(label: label, detail: detail) {
-            Toggle("", isOn: $isOn).toggleStyle(TEToggleStyle()).labelsHidden().fixedSize()
+            Toggle(label, isOn: $isOn).toggleStyle(TEToggleStyle()).labelsHidden().fixedSize()
         }
     }
 }
@@ -292,6 +328,13 @@ struct TESegmented<Value: Hashable>: View {
         }
         .overlay(Rectangle().strokeBorder(TE.ink, lineWidth: 1))
         .fixedSize(horizontal: false, vertical: true)
+        .accessibilityRepresentation {
+            Picker("", selection: $selection) {
+                ForEach(Array(options.enumerated()), id: \.offset) { _, option in Text(option.1).tag(option.0) }
+            }
+            .pickerStyle(.segmented)
+        }
+        .controlAccessibilityLabel(nil)
     }
 }
 
@@ -306,7 +349,7 @@ struct TEStepper: View {
         HStack(spacing: 0) {
             cell("−") { value = max(range.lowerBound, value - 1) }.disabled(value <= range.lowerBound)
             Rule(strong: true, vertical: true)
-            Text(value == 0 && zeroLabel != nil ? zeroLabel! : "\(value)\(unit.isEmpty ? "" : " " + unit)")
+            Text(value == 0 && zeroLabel != nil ? L(zeroLabel!) : "\(value)\(unit.isEmpty ? "" : " " + L(unit))")
                 .font(TE.body().monospacedDigit())
                 .frame(minWidth: 64)
                 .padding(.horizontal, 6)
@@ -316,6 +359,16 @@ struct TEStepper: View {
         .frame(height: 26)
         .overlay(Rectangle().strokeBorder(TE.ink, lineWidth: 1))
         .fixedSize()
+        .accessibilityElement(children: .ignore)
+        .controlAccessibilityLabel(nil)
+        .accessibilityValue(value == 0 && zeroLabel != nil ? L(zeroLabel!) : "\(value)\(unit.isEmpty ? "" : " " + L(unit))")
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: value = min(range.upperBound, value + 1)
+            case .decrement: value = max(range.lowerBound, value - 1)
+            @unknown default: break
+            }
+        }
     }
 
     private func cell(_ symbol: String, action: @escaping () -> Void) -> some View {
@@ -354,6 +407,8 @@ struct TEMenu<Value: Hashable>: View {
         .buttonStyle(.plain)
         .menuIndicator(.hidden)
         .fixedSize()
+        .controlAccessibilityLabel(nil)
+        .accessibilityValue(options.first { $0.0 == selection }?.1 ?? "")
     }
 }
 
@@ -410,6 +465,8 @@ struct TESlider: View {
             })
         }
         .frame(width: 180, height: 18)
+        .accessibilityRepresentation { Slider(value: $value, in: 0...1) }
+        .controlAccessibilityLabel(nil)
     }
 }
 
@@ -431,6 +488,7 @@ struct TECheck: View {
                 }
             }
             .frame(width: 13, height: 13)
+            .accessibilityHidden(true)
     }
 }
 
@@ -438,9 +496,9 @@ extension Phase {
     /// Lowercase name, as on a device panel.
     var label: String {
         switch self {
-        case .work: "work"
-        case .shortBreak: "short break"
-        case .longBreak: "long break"
+        case .work: L("work")
+        case .shortBreak: L("short break")
+        case .longBreak: L("long break")
         }
     }
 }

@@ -71,7 +71,7 @@ enum Snapshots {
     /// Renders light and dark variants; a nil size uses the view's own fitting size.
     private static func capture(_ name: String, _ view: () -> AnyView, _ size: NSSize?, into dir: URL) {
         for dark in [false, true] {
-            let content = view().background(TE.canvas)
+            let content = view().background(TE.canvas).environment(\.locale, AppLanguage.locale)
             let host = NSHostingView(rootView: size.map { AnyView(content.frame(width: $0.width, height: $0.height)) } ?? AnyView(content))
             host.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
             let frame = NSRect(origin: .zero, size: size ?? host.fittingSize)

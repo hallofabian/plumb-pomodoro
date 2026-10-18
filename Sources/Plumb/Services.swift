@@ -30,6 +30,7 @@ final class Services: NSObject, UNUserNotificationCenterDelegate {
     private override init() {
         Store.migrateLegacyDirectory()
         store = Store()
+        AppLanguage.preference = store.settings.language
         engine = TimerEngine(store: store)
         sync = FolderSync(store: store)
         blocker = Blocker(store: store)
@@ -57,6 +58,16 @@ final class Services: NSObject, UNUserNotificationCenterDelegate {
         ambient.stop()
     }
 
+    /// Starts a fresh copy of the app and quits this one (used after a language change).
+    static func relaunch() {
+        Services.shared.store.saveNow()
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        process.arguments = ["-c", "sleep 0.5; /usr/bin/open \"$0\"", Bundle.main.bundlePath]
+        try? process.run()
+        NSApp.terminate(nil)
+    }
+
     // MARK: Timer side effects
 
     private func handle(_ event: TimerEngine.Event) {
@@ -72,26 +83,26 @@ final class Services: NSObject, UNUserNotificationCenterDelegate {
             playSound(phase == .work ? store.settings.workEndSound : store.settings.breakEndSound)
             if phase == .work {
                 let long = engine.phase == .longBreak
-                notify(title: long ? "Time for a long break" : "Time for a break",
-                       body: "\(store.title(for: engine.taskID)) · today \(store.todayProgress). Reply to note what you did.",
+                notify(title: long ? L("Time for a long break") : L("Time for a break"),
+                       body: L("%@ · today %@. Reply to note what you did.", "\(store.title(for: engine.taskID))", "\(store.todayProgress)"),
                        category: Note.workDone,
                        info: ["interval": engine.lastWorkIntervalID?.uuidString ?? ""])
                 if store.settings.breakScreen { BreakOverlay.shared.show(services: self) }
             } else {
-                notify(title: "Break is over", body: "Ready for the next work interval.")
+                notify(title: L("Break is over"), body: L("Ready for the next work interval."))
             }
         case .taskSelected:
             Automation.run(.taskSelected, store.settings)
         case .targetReached:
             let streak = store.streak()
-            notify(title: "Goal reached",
-                   body: "\(store.todayTarget) work intervals today." + (streak > 1 ? " Streak: \(streak) days." : ""))
+            notify(title: L("Goal reached"),
+                   body: L("%@ work intervals today.", "\(store.todayTarget)") + (streak > 1 ? L(" Streak: %@ days.", "\(streak)") : ""))
         case .wentAway:
             Automation.run(.workPaused, store.settings)
         case .cameBack:
             let minutes = Int(Date().timeIntervalSince(engine.awaySince ?? Date()) / 60)
-            notify(title: "Paused while you were away",
-                   body: "\(minutes) min without input. Keep that time, drop it, or end the interval there.",
+            notify(title: L("Paused while you were away"),
+                   body: L("%@ min without input. Keep that time, drop it, or end the interval there.", "\(minutes)"),
                    category: Note.away)
             showPanel?()
         case .stateChanged:
@@ -166,7 +177,7 @@ final class Services: NSObject, UNUserNotificationCenterDelegate {
         case "done": _ = try? commands.run("complete_task", args)
         case "select": _ = try? commands.run("select_task", args)
         default:
-            do { _ = try commands.run(host, args) } catch { notify(title: "Plumb link failed", body: error.localizedDescription) }
+            do { _ = try commands.run(host, args) } catch { notify(title: L("Plumb link failed"), body: error.localizedDescription) }
         }
     }
 
@@ -187,10 +198,10 @@ final class Services: NSObject, UNUserNotificationCenterDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
             guard let self else { return }
             let alert = NSAlert()
-            alert.messageText = "Bring over your Be Focused history?"
-            alert.informativeText = "Plumb found Be Focused data on this Mac. Import its tasks, interval history and timer lengths? You can also do this later in Settings → sync & data."
-            alert.addButton(withTitle: "Import")
-            alert.addButton(withTitle: "Not Now")
+            alert.messageText = L("Bring over your Be Focused history?")
+            alert.informativeText = L("Plumb found Be Focused data on this Mac. Import its tasks, interval history and timer lengths? You can also do this later in Settings → sync & data.")
+            alert.addButton(withTitle: L("Import"))
+            alert.addButton(withTitle: L("Not Now"))
             NSApp.activate(ignoringOtherApps: true)
             if alert.runModal() == .alertFirstButtonReturn { BeFocusedImport.runInteractive(store: self.store) }
         }
@@ -216,12 +227,12 @@ final class Services: NSObject, UNUserNotificationCenterDelegate {
         let center = UNUserNotificationCenter.current()
         center.delegate = self
         center.requestAuthorization(options: [.alert, .sound]) { _, _ in }
-        let extend = UNNotificationAction(identifier: Note.extend, title: "+\(store.settings.extendMinutes) min")
-        let note = UNTextInputNotificationAction(identifier: Note.note, title: "Note what you did",
-                                                 textInputButtonTitle: "Save", textInputPlaceholder: "e.g. drafted section 3.2")
-        let keep = UNNotificationAction(identifier: Note.keep, title: "Keep the time")
-        let drop = UNNotificationAction(identifier: Note.drop, title: "Drop it, continue")
-        let end = UNNotificationAction(identifier: Note.end, title: "End interval there")
+        let extend = UNNotificationAction(identifier: Note.extend, title: L("+%@ min", "\(store.settings.extendMinutes)"))
+        let note = UNTextInputNotificationAction(identifier: Note.note, title: L("Note what you did"),
+                                                 textInputButtonTitle: L("Save"), textInputPlaceholder: L("e.g. drafted section 3.2"))
+        let keep = UNNotificationAction(identifier: Note.keep, title: L("Keep the time"))
+        let drop = UNNotificationAction(identifier: Note.drop, title: L("Drop it, continue"))
+        let end = UNNotificationAction(identifier: Note.end, title: L("End interval there"))
         center.setNotificationCategories([
             UNNotificationCategory(identifier: Note.workDone, actions: [note, extend], intentIdentifiers: []),
             UNNotificationCategory(identifier: Note.away, actions: [keep, drop, end], intentIdentifiers: []),
@@ -283,7 +294,7 @@ final class Services: NSObject, UNUserNotificationCenterDelegate {
                 if newValue { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
             } catch {
                 let alert = NSAlert(error: error)
-                alert.messageText = "Could not change the login item"
+                alert.messageText = L("Could not change the login item")
                 alert.runModal()
             }
         }

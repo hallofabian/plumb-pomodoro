@@ -17,20 +17,20 @@ struct AmbientSource: Identifiable, Hashable {
     let detail: String
     let kind: Kind
 
-    static let off = AmbientSource(id: "off", name: "off", detail: "", kind: .off)
+    static let off = AmbientSource(id: "off", name: L("off"), detail: "", kind: .off)
 
     static let catalog: [AmbientSource] = [
         off,
-        AmbientSource(id: "noise.brown", name: "brown noise", detail: "deep, soft rumble", kind: .noise(.brown)),
-        AmbientSource(id: "noise.pink", name: "pink noise", detail: "balanced, like steady rain", kind: .noise(.pink)),
-        AmbientSource(id: "noise.white", name: "white noise", detail: "bright hiss", kind: .noise(.white)),
-        AmbientSource(id: "binaural.alpha", name: "binaural · alpha 10 Hz", detail: "calm focus · use headphones",
+        AmbientSource(id: "noise.brown", name: L("brown noise"), detail: L("deep, soft rumble"), kind: .noise(.brown)),
+        AmbientSource(id: "noise.pink", name: L("pink noise"), detail: L("balanced, like steady rain"), kind: .noise(.pink)),
+        AmbientSource(id: "noise.white", name: L("white noise"), detail: L("bright hiss"), kind: .noise(.white)),
+        AmbientSource(id: "binaural.alpha", name: L("binaural · alpha 10 Hz"), detail: L("calm focus · use headphones"),
                       kind: .binaural(carrier: 200, beat: 10)),
-        AmbientSource(id: "binaural.beta", name: "binaural · beta 16 Hz", detail: "active concentration · use headphones",
+        AmbientSource(id: "binaural.beta", name: L("binaural · beta 16 Hz"), detail: L("active concentration · use headphones"),
                       kind: .binaural(carrier: 220, beat: 16)),
-        AmbientSource(id: "binaural.gamma", name: "binaural · gamma 40 Hz", detail: "high alertness · use headphones",
+        AmbientSource(id: "binaural.gamma", name: L("binaural · gamma 40 Hz"), detail: L("high alertness · use headphones"),
                       kind: .binaural(carrier: 180, beat: 40)),
-        AmbientSource(id: "custom", name: "custom stream", detail: "an MP3/AAC stream URL you have the rights to use",
+        AmbientSource(id: "custom", name: L("custom stream"), detail: L("an MP3/AAC stream URL you have the rights to use"),
                       kind: .custom),
     ]
 

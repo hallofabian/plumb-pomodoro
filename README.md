@@ -77,6 +77,10 @@ numerals, lowercase labels. A single amber lamp marks live state. Tokens and com
   beta 16 Hz, gamma 40 Hz), all generated on the Mac, or a custom stream URL
 - Blocking during work: hide apps, redirect websites (Safari/Chrome/Arc/Brave/Edge/Vivaldi/Opera)
 - Shortcuts automation on 7 events; CSV export
+- English (US) and German, each with its own date, time and number formats; follows the macOS
+  language or can be set in the app
+- VoiceOver: custom controls behave like standard switches, sliders, steppers and pickers; the
+  timer, progress, cycle and timeline are described in words
 - Import from other apps: CSV exports from Toggl Track, Clockify and plumb are recognized;
   any other timer app's CSV is matched by column name with an editable mapping and a preview.
   Be Focused (its local data file, offered on first launch) and TomatoBar (its log) are read

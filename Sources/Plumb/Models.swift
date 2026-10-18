@@ -15,9 +15,9 @@ enum Phase: String, Codable, CaseIterable {
 
     var title: String {
         switch self {
-        case .work: "Work"
-        case .shortBreak: "Short Break"
-        case .longBreak: "Long Break"
+        case .work: L("Work")
+        case .shortBreak: L("Short Break")
+        case .longBreak: L("Long Break")
         }
     }
 }
@@ -153,7 +153,7 @@ struct HotKey: Codable, Equatable {
 enum BlockMode: String, Codable, CaseIterable {
     case blockList, allowList
 
-    var title: String { self == .blockList ? "Block list" : "Allow list" }
+    var title: String { self == .blockList ? L("Block list") : L("Allow list") }
 }
 
 struct BlockedApp: Codable, Hashable, Identifiable {
@@ -169,13 +169,13 @@ enum AutomationEvent: String, Codable, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .workStarted: "Work interval started"
-        case .workPaused: "Work interval paused"
-        case .workEnded: "Work interval ended"
-        case .breakStarted: "Break started"
-        case .breakEnded: "Break ended"
-        case .taskCompleted: "Task completed"
-        case .taskSelected: "Task selected"
+        case .workStarted: L("Work interval started")
+        case .workPaused: L("Work interval paused")
+        case .workEnded: L("Work interval ended")
+        case .breakStarted: L("Break started")
+        case .breakEnded: L("Break ended")
+        case .taskCompleted: L("Task completed")
+        case .taskSelected: L("Task selected")
         }
     }
 }
@@ -243,6 +243,8 @@ struct AppSettings: Codable, Equatable {
     var extendMinutes = 5
     /// First launch set up default shortcuts and offered the Be Focused import.
     var firstRunDone = false
+    /// "system", "en" or "de"; applied at launch.
+    var language = "system"
 
     /// The goal for the day containing `date`.
     func target(on date: Date, calendar: Calendar = .current) -> Int {

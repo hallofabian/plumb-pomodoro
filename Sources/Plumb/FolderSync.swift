@@ -49,8 +49,8 @@ final class FolderSync {
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.canCreateDirectories = true
-        panel.prompt = "Use for Sync"
-        panel.message = "Choose a folder that your cloud service syncs. Plumb stores its data in a \"\(Self.subfolder)\" subfolder."
+        panel.prompt = L("Use for Sync")
+        panel.message = L("Choose a folder that your cloud service syncs. Plumb stores its data in a \"%@\" subfolder.", "\(Self.subfolder)")
         NSApp.activate(ignoringOtherApps: true)
         guard panel.runModal() == .OK, let url = panel.url else { return }
         store.settings.syncFolderBookmark = try? url.bookmarkData()

@@ -102,7 +102,7 @@ final class Store {
         return library.tasks.first { $0.id == id && !$0.deleted }
     }
 
-    func title(for taskID: UUID?) -> String { task(taskID)?.title ?? "Other" }
+    func title(for taskID: UUID?) -> String { task(taskID)?.title ?? L("Other") }
 
     func workType(_ id: UUID?) -> WorkType? {
         guard let id else { return nil }
@@ -128,7 +128,7 @@ final class Store {
 
     /// "3/8", or "3 · rest day" when today's goal is 0.
     var todayProgress: String {
-        todayTarget == 0 ? "\(todayWorkCount) · rest day" : "\(todayWorkCount)/\(todayTarget)"
+        todayTarget == 0 ? L("%@ · rest day", "\(todayWorkCount)") : "\(todayWorkCount)/\(todayTarget)"
     }
 
     func completedWorkCount(on day: Date, calendar: Calendar = .current) -> Int {
@@ -214,7 +214,7 @@ final class Store {
         task.completedAt = completed ? Date() : nil
         update(task)
         if completed {
-            registerUndo("“\(task.title)” completed") { [weak self] in
+            registerUndo(L("“%@” completed", "\(task.title)")) { [weak self] in
                 guard var t = self?.task(id) else { return }
                 t.completedAt = previous
                 self?.update(t)
@@ -235,7 +235,7 @@ final class Store {
             moved.append(library.intervals[j].id)
         }
         localChange()
-        registerUndo("“\(library.tasks[i].title)” deleted") { [weak self] in
+        registerUndo(L("“%@” deleted", "\(library.tasks[i].title)")) { [weak self] in
             guard let self, let k = self.library.tasks.firstIndex(where: { $0.id == id }) else { return }
             let now = Date()
             self.library.tasks[k].deleted = false
@@ -282,7 +282,7 @@ final class Store {
         library.intervals[i].deleted = true
         library.intervals[i].updatedAt = Date()
         localChange()
-        registerUndo("interval deleted") { [weak self] in self?.restore(intervals: [id]) }
+        registerUndo(L("interval deleted")) { [weak self] in self?.restore(intervals: [id]) }
     }
 
     /// Deletes without offering undo (used when the timer reopens its own interval).

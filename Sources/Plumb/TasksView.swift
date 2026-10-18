@@ -33,8 +33,8 @@ struct TasksView: View {
                         TodayOverview(services: services)
                     } else {
                         VStack(alignment: .leading, spacing: TE.s1) {
-                            Code("no task selected")
-                            Text("Pick a task on the left to see its notes, estimate, forecast and history.")
+                            Code(L("no task selected"))
+                            Text(L("Pick a task on the left to see its notes, estimate, forecast and history."))
                                 .font(TE.body()).foregroundStyle(TE.inkSecondary)
                         }
                         .padding(TE.s3)
@@ -53,10 +53,10 @@ struct TasksView: View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: TE.s1) {
                 TESegmented(selection: Binding(get: { mode }, set: { mode = $0; if $0 == .today { selection = nil } }),
-                            options: [(.today, "today"), (.todo, "to do"), (.completed, "done")])
-                TextField("", text: $search, prompt: Text("search").foregroundStyle(TE.inkMuted)).teField()
+                            options: [(.today, L("today")), (.todo, L("to do")), (.completed, L("done"))])
+                TextField("", text: $search, prompt: Text(L("search")).foregroundStyle(TE.inkMuted)).teField()
                 if mode != .completed {
-                    TextField("", text: $newTask, prompt: Text("new task, press return").foregroundStyle(TE.inkMuted))
+                    TextField("", text: $newTask, prompt: Text(L("new task, press return")).foregroundStyle(TE.inkMuted))
                         .teField()
                         .onSubmit(addTask)
                 }
@@ -93,7 +93,7 @@ struct TasksView: View {
             }
 
             Rule()
-            Code("\(store.activeTasks.count) open · \(store.completedTasks.count) done")
+            Code(L("%@ open · %@ done", "\(store.activeTasks.count)", "\(store.completedTasks.count)"))
                 .padding(.horizontal, TE.s2)
                 .padding(.vertical, 10)
         }
@@ -116,9 +116,9 @@ struct TasksView: View {
 
     private var emptyText: String {
         switch mode {
-        case .today: "nothing due or worked on today"
-        case .todo: "no tasks to do"
-        case .completed: "no completed tasks yet"
+        case .today: L("nothing due or worked on today")
+        case .todo: L("no tasks to do")
+        case .completed: L("no completed tasks yet")
         }
     }
 
@@ -127,6 +127,8 @@ struct TasksView: View {
         return TaskRow(services: services, task: task, selected: selection == id)
             .contentShape(Rectangle())
             .onTapGesture { selection = id }
+            .accessibilityAddTraits(selection == id ? [.isButton, .isSelected] : .isButton)
+            .accessibilityAction { selection = id }
             .listRowInsets(EdgeInsets())
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
@@ -160,10 +162,10 @@ private struct UndoBar: View {
                 HStack(spacing: TE.s2) {
                     Code(label, color: TE.ink)
                     Spacer()
-                    Button("undo  ⌘Z") { store.undo() }
+                    Button(L("undo  ⌘Z")) { store.undo() }
                         .teButton()
                         .keyboardShortcut("z", modifiers: .command)
-                    Button("×") { store.clearUndo() }.teButton(.text).help("Dismiss")
+                    Button("×") { store.clearUndo() }.teButton(.text).help(L("Dismiss"))
                 }
                 .padding(.horizontal, TE.s2)
                 .padding(.vertical, 8)
@@ -187,31 +189,31 @@ private struct TodayOverview: View {
         let work = intervals.filter { $0.phase == .work }
         TEPage {
             VStack(alignment: .leading, spacing: TE.s1) {
-                Code(Date().formatted(.dateTime.weekday(.wide).day().month(.wide)))
+                Code(Date().text(.dateTime.weekday(.wide).day().month(.wide)))
                 HStack(alignment: .firstTextBaseline, spacing: TE.s3) {
-                    Figure(label: store.todayTarget == 0 ? "intervals · rest day" : "intervals",
+                    Figure(label: store.todayTarget == 0 ? L("intervals · rest day") : L("intervals"),
                            value: store.todayTarget == 0 ? "\(store.todayWorkCount)" : "\(store.todayWorkCount)/\(store.todayTarget)", size: 40)
-                    Figure(label: "focused", value: formatDuration(work.reduce(0) { $0 + $1.duration }), size: 40)
-                    Figure(label: "streak", value: "\(store.streak())d", size: 40)
+                    Figure(label: L("focused"), value: formatDuration(work.reduce(0) { $0 + $1.duration }), size: 40)
+                    Figure(label: L("streak"), value: L("%@d", "\(store.streak())"), size: 40)
                 }
             }
-            TESection(title: "timeline") {
+            TESection(title: L("timeline")) {
                 DayTimeline(intervals: intervals, now: services.engine.now).padding(.top, TE.s2)
             }
-            TESection(title: "log") {
+            TESection(title: L("log")) {
                 if work.isEmpty {
-                    Text("No work intervals yet today.").font(TE.body()).foregroundStyle(TE.inkSecondary).padding(.vertical, 10)
+                    Text(L("No work intervals yet today.")).font(TE.body()).foregroundStyle(TE.inkSecondary).padding(.vertical, 10)
                 }
                 ForEach(work) { i in
                     HStack(alignment: .firstTextBaseline, spacing: TE.s2) {
-                        Text(i.start.formatted(date: .omitted, time: .shortened)).font(TE.body(12).monospacedDigit())
+                        Text(i.start.timeText).font(TE.body(12).monospacedDigit())
                             .frame(width: 54, alignment: .leading)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(store.title(for: i.taskID)).font(TE.body())
                             if let note = i.note { Text(note).font(TE.body(12)).foregroundStyle(TE.inkSecondary) }
                         }
                         Spacer()
-                        if i.outcome == .skipped { Code("skipped") }
+                        if i.outcome == .skipped { Code(L("skipped")) }
                         Text(formatDuration(i.duration)).font(TE.body(12).monospacedDigit())
                     }
                     .foregroundStyle(TE.ink)
@@ -251,7 +253,7 @@ struct DayTimeline: View {
                     }
                     .frame(width: w, height: i.phase == .work ? 24 : 12)
                     .offset(x: x(i.start), y: i.phase == .work ? 8 : 20)
-                    .help("\(i.phase.label) · \(i.start.formatted(date: .omitted, time: .shortened)) · \(formatDuration(i.duration))")
+                    .help("\(i.phase.label) · \(i.start.timeText) · \(formatDuration(i.duration))")
                 }
                 if now > start, now < start.addingTimeInterval(span) {
                     Rectangle().fill(TE.signal).frame(width: 2, height: 32).offset(x: x(now))
@@ -260,13 +262,19 @@ struct DayTimeline: View {
                     let pos = CGFloat(h - firstHour) / CGFloat(lastHour - firstHour) * geo.size.width
                     VStack(alignment: .leading, spacing: 2) {
                         Rectangle().fill(TE.ink).frame(width: 1, height: 5)
-                        Code(String(format: "%02d", h))
+                        Code(AppLanguage.current == .de ? String(format: "%02d", h)
+                             : day.addingTimeInterval(TimeInterval(h * 3600)).text(.dateTime.hour(.defaultDigits(amPM: .abbreviated))))
                     }
-                    .offset(x: min(pos, geo.size.width - 14), y: 32)
+                    .offset(x: min(pos, geo.size.width - (AppLanguage.current == .de ? 14 : 34)), y: 32)
                 }
             }
         }
         .frame(height: 56)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(L("timeline"))
+        .accessibilityValue(L("%@ work intervals, %@ focused",
+                              "\(intervals.filter { $0.phase == .work }.count)",
+                              spokenDuration(intervals.filter { $0.phase == .work }.reduce(0) { $0 + $1.duration })))
     }
 }
 
@@ -290,18 +298,19 @@ private struct TaskRow: View {
                         TECheck(checked: task.isCompleted, inverted: selected)
                     }
                     .buttonStyle(.plain)
-                    .help(task.isCompleted ? "Mark as not completed" : "Mark as completed")
+                    .help(task.isCompleted ? L("Mark as not completed") : L("Mark as completed"))
+                    .accessibilityLabel(task.isCompleted ? L("Mark as not completed") : L("Mark as completed"))
                 } else {
                     Code("—", color: selected ? TE.canvas : TE.inkSecondary).frame(width: 13)
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(task?.title ?? "other").font(TE.body()).foregroundStyle(fg).lineLimit(1)
+                    Text(task?.title ?? L("other")).font(TE.body()).foregroundStyle(fg).lineLimit(1)
                         .strikethrough(task?.isCompleted == true, color: fg)
                     if let due = task?.dueDate, task?.isCompleted == false {
-                        Code("due \(due.formatted(.dateTime.day().month(.abbreviated)))",
+                        Code(L("due %@", due.dayMonthText),
                              color: due < Calendar.current.startOfDay(for: Date()) ? TE.signal : (selected ? TE.canvas : TE.inkSecondary))
                     } else if task == nil {
-                        Code("time without a task", color: selected ? TE.canvas : TE.inkSecondary)
+                        Code(L("time without a task"), color: selected ? TE.canvas : TE.inkSecondary)
                     }
                 }
                 Spacer(minLength: 4)
@@ -316,17 +325,17 @@ private struct TaskRow: View {
         }
         .background(selected ? TE.ink : Color.clear)
         .contextMenu {
-            Button("Start Timer for This Task") {
+            Button(L("Start Timer for This Task")) {
                 engine.select(taskID: id)
                 if engine.phase != .work { engine.stop() }
                 engine.start()
             }
             if let task {
-                Button(task.isCompleted ? "Mark as Not Completed" : "Mark as Completed") {
+                Button(task.isCompleted ? L("Mark as Not Completed") : L("Mark as Completed")) {
                     task.isCompleted ? store.setCompleted(task.id, false) : services.taskCompleted(task.id)
                 }
                 Divider()
-                Button("Delete Task", role: .destructive) {
+                Button(L("Delete Task"), role: .destructive) {
                     if services.engine.taskID == task.id { services.engine.select(taskID: nil) }
                     services.store.deleteTask(task.id)
                 }
@@ -346,59 +355,59 @@ private struct TaskDetail: View {
         TEPage {
             if draft != nil {
                 VStack(alignment: .leading, spacing: TE.s1) {
-                    Code("task")
-                    TextField("", text: binding(\.title, ""), prompt: Text("title")).teField(large: true)
-                    TextField("", text: binding(\.note, ""), prompt: Text("notes").foregroundStyle(TE.inkMuted), axis: .vertical)
+                    Code(L("task"))
+                    TextField("", text: binding(\.title, ""), prompt: Text(L("title"))).teField(large: true)
+                    TextField("", text: binding(\.note, ""), prompt: Text(L("notes")).foregroundStyle(TE.inkMuted), axis: .vertical)
                         .lineLimit(3...8)
                         .teField()
                 }
-                TESection(title: "plan") {
-                    TERow(label: "Estimated intervals", detail: estimateHint) {
+                TESection(title: L("plan")) {
+                    TERow(label: L("Estimated intervals"), detail: estimateHint) {
                         HStack(spacing: TE.s1) {
                             if let suggestion = suggestedEstimate {
-                                Button("use \(suggestion)") { draft?.estimatedIntervals = suggestion }.teButton(.text)
+                                Button(L("use %@", "\(suggestion)")) { draft?.estimatedIntervals = suggestion }.teButton(.text).fixedSize()
                             }
                             TEStepper(value: Binding(get: { draft?.estimatedIntervals ?? 0 },
                                                      set: { draft?.estimatedIntervals = $0 > 0 ? $0 : nil }),
                                       range: 0...999, zeroLabel: "none")
                         }
                     }
-                    TEToggleRow(label: "Due date", isOn: Binding(
+                    TEToggleRow(label: L("Due date"), isOn: Binding(
                         get: { draft?.dueDate != nil },
                         set: { draft?.dueDate = $0 ? Calendar.current.startOfDay(for: Date()) : nil }))
                     if draft?.dueDate != nil {
-                        TERow(label: "Due") {
+                        TERow(label: L("Due")) {
                             DatePicker("", selection: Binding(get: { draft?.dueDate ?? Date() }, set: { draft?.dueDate = $0 }),
                                        displayedComponents: .date)
                                 .labelsHidden()
                                 .datePickerStyle(.field)
                         }
                     }
-                    TERow(label: "Work type", detail: "Sets this task's interval lengths.") {
+                    TERow(label: L("Work type"), detail: L("Sets this task's interval lengths.")) {
                         TEMenu(selection: binding(\.workTypeID, nil), options:
-                            [(nil, "default · \(store.settings.durations.work) min")]
-                                + store.workTypes.map { (Optional($0.id), "\($0.name) · \($0.durations.work) min") })
+                            [(nil, L("default · %@ min", "\(store.settings.durations.work)"))]
+                                + store.workTypes.map { (Optional($0.id), L("%@ · %@ min", $0.name, "\($0.durations.work)")) })
                     }
                 }
                 if let task = draft, !task.isCompleted { ForecastSection(store: store, task: task) }
             } else {
                 VStack(alignment: .leading, spacing: TE.s1) {
-                    Code("task")
-                    Text("other").font(TE.heading(26)).foregroundStyle(TE.ink)
-                    Text("Intervals without a task, and intervals of deleted tasks.")
+                    Code(L("task"))
+                    Text(L("other")).font(TE.heading(26)).foregroundStyle(TE.ink)
+                    Text(L("Intervals without a task, and intervals of deleted tasks."))
                         .font(TE.body()).foregroundStyle(TE.inkSecondary)
                 }
             }
 
             HStack(spacing: TE.s1) {
-                Button("start timer") {
+                Button(L("start timer")) {
                     services.engine.select(taskID: taskID)
                     if services.engine.phase != .work { services.engine.stop() }
                     services.engine.start()
                 }
                 .teButton(.primary)
                 if let task = draft {
-                    Button(task.isCompleted ? "mark as not completed" : "mark as completed") {
+                    Button(task.isCompleted ? L("mark as not completed") : L("mark as completed")) {
                         task.isCompleted ? store.setCompleted(task.id, false) : services.taskCompleted(task.id)
                         draft = store.task(task.id)
                     }
@@ -422,7 +431,7 @@ private struct TaskDetail: View {
 
     private var estimateHint: String? {
         guard let c = calibration else { return nil }
-        return String(format: "You usually need %.1f× your estimate (%d finished tasks).", c.median, c.ratios.count)
+        return L("You usually need %@× your estimate (%@ finished tasks).", numberText(c.median), "\(c.ratios.count)")
     }
 
     private func binding<T>(_ keyPath: WritableKeyPath<FocusTask, T>, _ fallback: T) -> Binding<T> {
@@ -436,22 +445,22 @@ private struct ForecastSection: View {
     let task: FocusTask
 
     var body: some View {
-        TESection(title: "forecast", note: note) {
+        TESection(title: L("forecast"), note: note) {
             if let r = Forecast.run(store: store, task: task) {
                 VStack(alignment: .leading, spacing: TE.s2) {
                     HStack(alignment: .firstTextBaseline, spacing: TE.s3) {
-                        Figure(label: "likely done", value: r.remaining.median == 0 ? "now" : short(r.finish.median), size: 40)
-                        Figure(label: "intervals left", value: r.remaining.low == r.remaining.high
+                        Figure(label: L("likely done"), value: r.remaining.median == 0 ? L("now") : short(r.finish.median), size: 40)
+                        Figure(label: L("intervals left"), value: r.remaining.low == r.remaining.high
                                ? "\(r.remaining.median)" : "\(r.remaining.low)–\(r.remaining.high)", size: 40)
-                        Figure(label: "pace / week", value: String(format: "%.1f", r.weeklyPace), size: 40)
+                        Figure(label: L("pace / week"), value: numberText(r.weeklyPace), size: 40)
                     }
                     if r.remaining.median > 0 { RangeStrip(result: r) }
                 }
                 .padding(.vertical, TE.s2)
             } else {
                 Text(task.estimatedIntervals == nil
-                     ? "Set an estimate above to see when this task will likely be done."
-                     : "A forecast appears after at least 3 completed intervals on this task.")
+                     ? L("Set an estimate above to see when this task will likely be done.")
+                     : L("A forecast appears after at least 3 completed intervals on this task."))
                     .font(TE.body()).foregroundStyle(TE.inkSecondary)
                     .padding(.vertical, 10)
             }
@@ -460,11 +469,12 @@ private struct ForecastSection: View {
 
     private var note: String? {
         guard let r = Forecast.run(store: store, task: task), r.remaining.median > 0 else { return nil }
-        return "80% chance between \(short(r.finish.early)) and \(short(r.finish.late)). Based on your last \(r.weeksSampled) week\(r.weeksSampled == 1 ? "" : "s") on this task"
-            + (r.calibrated ? " and how far your estimates were off before." : "; it gets sharper once 3 tasks with estimates are done.")
+        let range = L("80%% chance between %@ and %@.", short(r.finish.early), short(r.finish.late))
+        let basis = r.weeksSampled == 1 ? L("Based on your last week on this task") : L("Based on your last %@ weeks on this task", "\(r.weeksSampled)")
+        return range + " " + basis + (r.calibrated ? L(" and how far your estimates were off before.") : L("; it gets sharper once 3 tasks with estimates are done."))
     }
 
-    private func short(_ d: Date) -> String { d.formatted(.dateTime.day().month(.abbreviated)) }
+    private func short(_ d: Date) -> String { d.dayMonthText }
 }
 
 /// Today → 10th–90th percentile band with the median tick.
@@ -482,8 +492,8 @@ private struct RangeStrip: View {
                     .frame(width: max(2, x(result.finish.late) - x(result.finish.early)), height: 4)
                     .offset(x: x(result.finish.early), y: 6)
                 Rectangle().fill(TE.signal).frame(width: 2, height: 16).offset(x: x(result.finish.median))
-                Code("today").offset(y: 20)
-                Code(result.finish.median.formatted(.dateTime.day().month(.abbreviated)), color: TE.ink)
+                Code(L("today")).offset(y: 20)
+                Code(result.finish.median.dayMonthText, color: TE.ink)
                     .offset(x: min(x(result.finish.median) - 10, geo.size.width - 50), y: 20)
             }
         }
@@ -500,13 +510,13 @@ private struct IntervalList: View {
         let work = store.intervals(for: taskID).filter { $0.phase == .work }
         let completed = work.filter { $0.outcome == .completed }
         let total = work.reduce(0) { $0 + $1.duration }
-        TESection(title: "history", note: "Click an interval to edit it.") {
+        TESection(title: L("history"), note: L("Click an interval to edit it.")) {
             HStack(alignment: .firstTextBaseline, spacing: TE.s3) {
-                Figure(label: "intervals", value: "\(completed.count)")
-                Figure(label: "time", value: formatDuration(total))
-                Figure(label: "skipped", value: "\(work.count - completed.count)")
+                Figure(label: L("intervals"), value: "\(completed.count)")
+                Figure(label: L("time"), value: formatDuration(total))
+                Figure(label: L("skipped"), value: "\(work.count - completed.count)")
                 Spacer()
-                Button("add interval") {
+                Button(L("add interval")) {
                     editing = FocusInterval(taskID: taskID, phase: .work,
                                             start: Date().addingTimeInterval(-Double(store.durations(for: taskID).work * 60)),
                                             duration: Double(store.durations(for: taskID).work * 60), outcome: .completed)
@@ -516,20 +526,21 @@ private struct IntervalList: View {
             .padding(.vertical, TE.s2)
             Rule()
             if work.isEmpty {
-                Text("No work intervals yet.").font(TE.body()).foregroundStyle(TE.inkSecondary).padding(.vertical, 10)
+                Text(L("No work intervals yet.")).font(TE.body()).foregroundStyle(TE.inkSecondary).padding(.vertical, 10)
             }
             ForEach(work.prefix(200)) { interval in
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: TE.s2) {
-                        Text(interval.start.formatted(.dateTime.year().month(.twoDigits).day(.twoDigits).hour().minute()))
+                        Text(interval.start.dateTimeText)
                             .font(TE.body(12).monospacedDigit())
                         Spacer()
-                        if interval.outcome == .skipped { Code("skipped") }
+                        if interval.outcome == .skipped { Code(L("skipped")) }
                         Text(formatDuration(interval.duration)).font(TE.body(12).monospacedDigit()).frame(width: 60, alignment: .trailing)
                         Button { store.deleteInterval(interval.id) } label: { Text("×").font(TE.body(14)) }
                             .buttonStyle(.plain)
                             .foregroundStyle(TE.inkSecondary)
-                            .help("Delete interval (undo with ⌘Z)")
+                            .help(L("Delete interval (undo with ⌘Z)"))
+                        .accessibilityLabel(L("Delete interval (undo with ⌘Z)"))
                     }
                     if let note = interval.note {
                         Text(note).font(TE.body(12)).foregroundStyle(TE.inkSecondary)
@@ -542,7 +553,7 @@ private struct IntervalList: View {
                 Rule()
             }
             if work.count > 200 {
-                Code("latest 200 of \(work.count) · see reports for all").padding(.top, TE.s1)
+                Code(L("latest 200 of %@ · see reports for all", "\(work.count)")).padding(.top, TE.s1)
             }
         }
         .sheet(item: $editing) { interval in
@@ -569,32 +580,32 @@ private struct IntervalEditor: View {
     }
 
     private var problem: String? {
-        if minutes <= 0 { return "The interval needs at least one minute." }
-        if interval.start.addingTimeInterval(Double(minutes * 60)) > Date() { return "The interval must end before now." }
+        if minutes <= 0 { return L("The interval needs at least one minute.") }
+        if interval.start.addingTimeInterval(Double(minutes * 60)) > Date() { return L("The interval must end before now.") }
         return nil
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: TE.s3) {
-                Code(isNew ? "add interval" : "edit interval")
-                TESection(title: "interval") {
-                    TERow(label: "Task") {
+                Code(isNew ? L("add interval") : L("edit interval"))
+                TESection(title: L("interval")) {
+                    TERow(label: L("Task")) {
                         TEMenu(selection: $interval.taskID,
-                               options: [(nil, "other")] + (store.activeTasks + store.completedTasks).map { (Optional($0.id), $0.title) })
+                               options: [(nil, L("other"))] + (store.activeTasks + store.completedTasks).map { (Optional($0.id), $0.title) })
                     }
-                    TERow(label: "Start") {
+                    TERow(label: L("Start")) {
                         DatePicker("", selection: $interval.start, in: ...Date(), displayedComponents: [.date, .hourAndMinute])
                             .labelsHidden()
                             .datePickerStyle(.field)
                     }
-                    TERow(label: "Length") { TEStepper(value: $minutes, range: 1...300, unit: "min") }
-                    TERow(label: "Outcome") {
-                        TESegmented(selection: $interval.outcome, options: [(.completed, "completed"), (.skipped, "skipped")])
+                    TERow(label: L("Length")) { TEStepper(value: $minutes, range: 1...300, unit: L("min")) }
+                    TERow(label: L("Outcome")) {
+                        TESegmented(selection: $interval.outcome, options: [(.completed, L("completed")), (.skipped, L("skipped"))])
                             .frame(width: 200)
                     }
                 }
-                TextField("", text: $note, prompt: Text("note: what got done").foregroundStyle(TE.inkMuted)).teField()
+                TextField("", text: $note, prompt: Text(L("note: what got done")).foregroundStyle(TE.inkMuted)).teField()
                 if let problem { Code(problem, color: TE.ink) }
             }
             .padding(TE.s3)
@@ -602,11 +613,11 @@ private struct IntervalEditor: View {
             Rule(strong: true)
             HStack(spacing: TE.s1) {
                 if !isNew {
-                    Button("delete") { store.deleteInterval(interval.id); dismiss() }.teButton(.text)
+                    Button(L("delete")) { store.deleteInterval(interval.id); dismiss() }.teButton(.text)
                 }
                 Spacer()
-                Button("cancel") { dismiss() }.teButton().keyboardShortcut(.cancelAction)
-                Button("save") { save() }.teButton(.primary).keyboardShortcut(.defaultAction).disabled(problem != nil)
+                Button(L("cancel")) { dismiss() }.teButton().keyboardShortcut(.cancelAction)
+                Button(L("save")) { save() }.teButton(.primary).keyboardShortcut(.defaultAction).disabled(problem != nil)
             }
             .padding(TE.s2)
         }
@@ -637,5 +648,6 @@ struct Figure: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
         }
+        .accessibilityElement(children: .combine)
     }
 }

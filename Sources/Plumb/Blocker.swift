@@ -75,8 +75,8 @@ final class Blocker {
     private func check(_ app: NSRunningApplication) {
         guard isBlocked(app) else { return }
         app.hide()
-        notice(key: app.bundleIdentifier ?? "", title: "\(app.localizedName ?? "App") is blocked",
-               body: "You chose to block it during work intervals.")
+        notice(key: app.bundleIdentifier ?? "", title: L("%@ is blocked", app.localizedName ?? "App"),
+               body: L("You chose to block it during work intervals."))
     }
 
     func isBlocked(_ app: NSRunningApplication) -> Bool {
@@ -108,7 +108,7 @@ final class Blocker {
 
         let page = blockedPageURL.absoluteString + "?site=" + (host.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")
         _ = run("tell application id \"\(id)\" to set URL of \(tab) of front window to \"\(page)\"", cacheKey: nil, browser: id)
-        notice(key: host, title: "\(host) is blocked", body: "Back to work — it is available again during your break.")
+        notice(key: host, title: L("%@ is blocked", "\(host)"), body: L("Back to work — it is available again during your break."))
     }
 
     nonisolated static func host(_ host: String, matches pattern: String) -> Bool {
@@ -134,8 +134,8 @@ final class Blocker {
         let result = script.executeAndReturnError(&error)
         if let code = error?[NSAppleScript.errorNumber] as? Int, code == -1743 {
             deniedBrowsers.insert(browser)
-            notice(key: "denied." + browser, title: "Website blocking needs permission",
-                   body: "Allow Plumb to control your browser in System Settings → Privacy & Security → Automation.")
+            notice(key: "denied." + browser, title: L("Website blocking needs permission"),
+                   body: L("Allow Plumb to control your browser in System Settings → Privacy & Security → Automation."))
         }
         return result.stringValue
     }

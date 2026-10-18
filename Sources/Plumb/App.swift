@@ -36,28 +36,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let main = NSMenu()
         let appItem = NSMenuItem()
         let appMenu = NSMenu()
-        appMenu.addItem(withTitle: "Settings…", action: #selector(AppDelegate.openSettings), keyEquivalent: ",")
+        appMenu.addItem(withTitle: L("Settings…"), action: #selector(AppDelegate.openSettings), keyEquivalent: ",")
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "Quit Plumb", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenu.addItem(withTitle: L("Quit Plumb"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appItem.submenu = appMenu
         main.addItem(appItem)
 
         let editItem = NSMenuItem()
-        let edit = NSMenu(title: "Edit")
-        edit.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
-        edit.addItem(withTitle: "Redo", action: Selector(("redo:")), keyEquivalent: "Z")
+        let edit = NSMenu(title: L("Edit"))
+        edit.addItem(withTitle: L("Undo"), action: Selector(("undo:")), keyEquivalent: "z")
+        edit.addItem(withTitle: L("Redo"), action: Selector(("redo:")), keyEquivalent: "Z")
         edit.addItem(.separator())
-        edit.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
-        edit.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
-        edit.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
-        edit.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        edit.addItem(withTitle: L("Cut"), action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        edit.addItem(withTitle: L("Copy"), action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        edit.addItem(withTitle: L("Paste"), action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        edit.addItem(withTitle: L("Select All"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         editItem.submenu = edit
         main.addItem(editItem)
 
         let windowItem = NSMenuItem()
-        let window = NSMenu(title: "Window")
-        window.addItem(withTitle: "Close", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
-        window.addItem(withTitle: "Minimize", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
+        let window = NSMenu(title: L("Window"))
+        window.addItem(withTitle: L("Close"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        window.addItem(withTitle: L("Minimize"), action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
         windowItem.submenu = window
         main.addItem(windowItem)
         return main
@@ -77,6 +77,7 @@ final class StatusBarController: NSObject {
         self.services = services
         super.init()
         let root = TimerPopover(services: services).overlay(Rectangle().strokeBorder(TE.ink, lineWidth: 1))
+            .environment(\.locale, AppLanguage.locale)
         panel.contentViewController = NSHostingController(rootView: root)
         if let button = item.button {
             button.target = self
@@ -118,6 +119,8 @@ final class StatusBarController: NSObject {
         let engine = services.engine
         button.image = Self.lamp(engine.status, isBreak: engine.phase.isBreak)
         let showTime = forceTime || (services.store.settings.showTimerInMenuBar && engine.status != .idle)
+        let state = engine.status == .running ? L("running") : (engine.status == .paused ? L("paused") : L("ready"))
+        button.setAccessibilityLabel("Plumb, \(engine.phase.label), \(state), " + L("%@ remaining", spokenDuration(engine.remaining)))
         button.title = showTime ? " " + formatClock(engine.remaining) : ""
     }
 
@@ -169,15 +172,15 @@ final class StatusBarController: NSObject {
         header.isEnabled = false
         menu.addItem(header)
         menu.addItem(.separator())
-        menu.addItem(action(engine.isRunning ? "Pause" : (engine.status == .paused ? "Resume" : "Start \(engine.phase.title)")) { engine.toggle() })
-        menu.addItem(action("Skip \(engine.phase.title)") { engine.skip() })
-        if engine.status != .idle { menu.addItem(action("Stop") { engine.stop() }) }
+        menu.addItem(action(engine.isRunning ? L("Pause") : (engine.status == .paused ? L("Resume") : L("Start %@", engine.phase.title))) { engine.toggle() })
+        menu.addItem(action(L("Skip %@", engine.phase.title)) { engine.skip() })
+        if engine.status != .idle { menu.addItem(action(L("Stop")) { engine.stop() }) }
         menu.addItem(.separator())
-        menu.addItem(action("Tasks…") { Windows.shared.show(.tasks) })
-        menu.addItem(action("Reports…") { Windows.shared.show(.reports) })
-        menu.addItem(action("Settings…") { Windows.shared.show(.settings) })
+        menu.addItem(action(L("Tasks…")) { Windows.shared.show(.tasks) })
+        menu.addItem(action(L("Reports…")) { Windows.shared.show(.reports) })
+        menu.addItem(action(L("Settings…")) { Windows.shared.show(.settings) })
         menu.addItem(.separator())
-        menu.addItem(action("Quit Plumb") { NSApp.terminate(nil) })
+        menu.addItem(action(L("Quit Plumb")) { NSApp.terminate(nil) })
         if let button = item.button {
             menu.popUp(positioning: nil, at: NSPoint(x: 0, y: button.bounds.height + 4), in: button)
         }
@@ -254,8 +257,8 @@ enum WindowKind: String {
     var title: String {
         switch self {
         case .tasks: "Plumb"
-        case .reports: "Reports"
-        case .settings: "Plumb Settings"
+        case .reports: L("Reports")
+        case .settings: L("Plumb Settings")
         }
     }
 
@@ -263,7 +266,7 @@ enum WindowKind: String {
         switch self {
         case .tasks: NSSize(width: 820, height: 560)
         case .reports: NSSize(width: 860, height: 640)
-        case .settings: NSSize(width: 620, height: 560)
+        case .settings: NSSize(width: 720, height: 600)
         }
     }
 }
@@ -297,7 +300,7 @@ final class Windows: NSObject, NSWindowDelegate {
         window.title = kind.title
         window.titlebarAppearsTransparent = true
         window.backgroundColor = TE.nsCanvas
-        window.contentViewController = NSHostingController(rootView: root)
+        window.contentViewController = NSHostingController(rootView: root.environment(\.locale, AppLanguage.locale))
         window.setContentSize(kind.size)
         window.isReleasedWhenClosed = false
         window.delegate = self
@@ -320,7 +323,11 @@ func formatClock(_ seconds: TimeInterval) -> String {
     return s >= 3600 ? String(format: "%d:%02d:%02d", s / 3600, s / 60 % 60, s % 60) : String(format: "%02d:%02d", s / 60, s % 60)
 }
 
+/// "2h 30m" in English, "2 h 30 min" in German.
 func formatDuration(_ seconds: TimeInterval) -> String {
     let minutes = Int((seconds / 60).rounded())
+    if AppLanguage.current == .de {
+        return minutes >= 60 ? "\(minutes / 60) h \(minutes % 60) min" : "\(minutes) min"
+    }
     return minutes >= 60 ? "\(minutes / 60)h \(minutes % 60)m" : "\(minutes)m"
 }
