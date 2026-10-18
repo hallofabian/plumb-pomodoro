@@ -73,7 +73,7 @@ final class Services: NSObject, UNUserNotificationCenterDelegate {
             if phase == .work {
                 let long = engine.phase == .longBreak
                 notify(title: long ? "Time for a long break" : "Time for a break",
-                       body: "\(store.title(for: engine.taskID)) · today \(store.todayWorkCount)/\(store.todayTarget). Reply to note what you did.",
+                       body: "\(store.title(for: engine.taskID)) · today \(store.todayProgress). Reply to note what you did.",
                        category: Note.workDone,
                        info: ["interval": engine.lastWorkIntervalID?.uuidString ?? ""])
                 if store.settings.breakScreen { BreakOverlay.shared.show(services: self) }

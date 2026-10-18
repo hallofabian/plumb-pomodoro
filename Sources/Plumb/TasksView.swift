@@ -189,7 +189,8 @@ private struct TodayOverview: View {
             VStack(alignment: .leading, spacing: TE.s1) {
                 Code(Date().formatted(.dateTime.weekday(.wide).day().month(.wide)))
                 HStack(alignment: .firstTextBaseline, spacing: TE.s3) {
-                    Figure(label: "intervals", value: "\(store.todayWorkCount)/\(store.todayTarget)", size: 40)
+                    Figure(label: store.todayTarget == 0 ? "intervals · rest day" : "intervals",
+                           value: store.todayTarget == 0 ? "\(store.todayWorkCount)" : "\(store.todayWorkCount)/\(store.todayTarget)", size: 40)
                     Figure(label: "focused", value: formatDuration(work.reduce(0) { $0 + $1.duration }), size: 40)
                     Figure(label: "streak", value: "\(store.streak())d", size: 40)
                 }

@@ -345,7 +345,7 @@ private struct DailyGoal: View {
         let target = store.todayTarget
         let streak = store.streak()
         HStack(spacing: 4) {
-            Code("today \(store.todayWorkCount)/\(target)",
+            Code("today \(store.todayProgress)",
                  color: store.todayWorkCount >= target ? TE.ink : TE.inkSecondary)
             SquareStep("−") { services.commands.setTodayGoal(max(1, target - 1)) }.disabled(target <= 1)
             SquareStep("+") { services.commands.setTodayGoal(min(30, target + 1)) }.disabled(target >= 30)

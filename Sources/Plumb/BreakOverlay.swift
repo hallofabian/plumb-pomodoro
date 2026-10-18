@@ -43,7 +43,7 @@ private final class OverlayWindow: NSWindow {
     override func cancelOperation(_ sender: Any?) { onEscape?() }
 }
 
-private struct BreakCard: View {
+struct BreakCard: View {
     let services: Services
     let showControls: Bool
     let dismiss: () -> Void

@@ -9,6 +9,48 @@ Work intervals and breaks, tasks, daily goals and streaks, reports, website and 
 blocking, white noise and binaural beats, Shortcuts automation, a command line tool and
 an MCP server for AI assistants.
 
+<p align="center">
+  <img src="docs/screenshots/panel.png" width="300" alt="plumb menu bar panel with a running work interval">
+  &nbsp;
+  <img src="docs/screenshots/panel-dark.png" width="300" alt="The same panel in dark mode">
+</p>
+
+## Screenshots
+
+**Today**: progress against your daily goal, streak, a timeline of the day and a log with
+a one-line note per interval.
+
+<img src="docs/screenshots/today.png" alt="Today view with timeline and interval log">
+
+**Forecast**: from your real pace and how far your past estimates were off, plumb
+predicts when a task will likely be done, with an 80% range.
+
+<img src="docs/screenshots/task-forecast.png" alt="Task detail with estimate calibration and finish-date forecast">
+
+**Reports**: work time, intervals, skipped, streak and estimate accuracy; hours per day
+and per task.
+
+<img src="docs/screenshots/reports.png" alt="Reports for this month">
+
+**Honest time**: step away and the timer pauses at the moment you left, then asks what to
+do with that time.
+
+<img src="docs/screenshots/panel-away.png" width="300" alt="Panel asking whether to keep, drop or end the time away">
+
+**Breaks that happen**: an optional full-screen card when a work interval ends.
+
+<img src="docs/screenshots/break-card-dark.png" alt="Full-screen break card">
+
+**Background sound and blocking**: noise and binaural beats generated on the Mac;
+distracting apps and websites blocked during work.
+
+<p>
+  <img src="docs/screenshots/settings-sounds.png" width="49%" alt="Sound settings">
+  <img src="docs/screenshots/settings-blocking.png" width="49%" alt="Blocking settings">
+</p>
+
+<sub>Screenshots use invented demo data; regenerate them with `scripts/screenshots.sh`.</sub>
+
 ## Design
 
 A monochrome, device-like look: off-white and ink (near-black in dark mode), 1 pt hairline
@@ -70,6 +112,7 @@ Requires macOS 14+ and the Xcode Command Line Tools.
 ```sh
 scripts/build-app.sh      # builds a universal Plumb.app and installs it to ~/Applications
 scripts/test.sh           # runs the tests
+scripts/screenshots.sh    # regenerates docs/screenshots from demo data
 ```
 
 A fresh build starts empty: no tasks, no history. Data lives in

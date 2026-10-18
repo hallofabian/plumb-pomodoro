@@ -126,6 +126,11 @@ final class Store {
 
     var todayTarget: Int { settings.target(on: Date()) }
 
+    /// "3/8", or "3 · rest day" when today's goal is 0.
+    var todayProgress: String {
+        todayTarget == 0 ? "\(todayWorkCount) · rest day" : "\(todayWorkCount)/\(todayTarget)"
+    }
+
     func completedWorkCount(on day: Date, calendar: Calendar = .current) -> Int {
         intervals.filter { $0.phase == .work && $0.outcome == .completed && calendar.isDate($0.start, inSameDayAs: day) }.count
     }
