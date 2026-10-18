@@ -121,23 +121,28 @@ final class StatusBarController: NSObject {
         button.title = showTime ? " " + formatClock(engine.remaining) : ""
     }
 
-    /// Menu bar glyph: a square lamp. Outline when idle, filled while running,
-    /// half-filled when paused; breaks get a smaller square.
-    private static func lamp(_ status: TimerStatus, isBreak: Bool) -> NSImage {
+    /// Menu bar glyph: a play triangle while working, a small filled square during a
+    /// running break, two bars when paused, and an outline square when idle.
+    static func lamp(_ status: TimerStatus, isBreak: Bool) -> NSImage {
         let image = NSImage(size: NSSize(width: 12, height: 12), flipped: false) { _ in
-            let side: CGFloat = isBreak ? 8 : 10
-            let rect = NSRect(x: (12 - side) / 2, y: (12 - side) / 2, width: side, height: side)
             NSColor.black.set()
             switch status {
+            case .running where !isBreak:
+                let play = NSBezierPath()
+                play.move(to: NSPoint(x: 2, y: 1))
+                play.line(to: NSPoint(x: 11, y: 6))
+                play.line(to: NSPoint(x: 2, y: 11))
+                play.close()
+                play.fill()
             case .running:
-                rect.fill()
+                NSRect(x: 2, y: 2, width: 8, height: 8).fill()
             case .paused:
-                NSBezierPath(rect: rect.insetBy(dx: 0.5, dy: 0.5)).stroke()
-                NSRect(x: rect.minX, y: rect.minY, width: side, height: side / 2).fill()
+                NSRect(x: 2.5, y: 1, width: 2.5, height: 10).fill()
+                NSRect(x: 7, y: 1, width: 2.5, height: 10).fill()
             case .idle:
-                let path = NSBezierPath(rect: rect.insetBy(dx: 0.5, dy: 0.5))
-                path.lineWidth = 1
-                path.stroke()
+                let outline = NSBezierPath(rect: NSRect(x: 1.5, y: 1.5, width: 9, height: 9))
+                outline.lineWidth = 1
+                outline.stroke()
             }
             return true
         }
