@@ -133,6 +133,6 @@ automation permission (used only for website blocking).
 
 [MIT](LICENSE).
 
-Plumb is an independent project. It is not affiliated with, endorsed by, or connected to
-Xwavesoft or Be Focused; "Be Focused" is mentioned only to describe the data import. The
-importer reads the user's own local data file and contains no code or assets from that app.
+**Imports from other apps:** names such as Be Focused, TomatoBar, Toggl Track and Clockify
+appear only to describe which data plumb can import. plumb is not affiliated with these apps
+and contains none of their code or assets.
