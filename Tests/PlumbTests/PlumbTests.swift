@@ -64,6 +64,7 @@ private func tempDir() -> URL {
     private func makeEngine() -> (Store, TimerEngine, Clock) {
         let store = Store(directory: tempDir())
         store.settings.durations = Durations(work: 25, shortBreak: 5, longBreak: 15, longBreakAfter: 2)
+        store.settings.awayMinutes = 5
         let engine = TimerEngine(store: store)
         let clock = Clock()
         engine.clock = { clock.now }
@@ -83,6 +84,20 @@ private func tempDir() -> URL {
         #expect(engine.accumulated == 5 * 60)
         clock.idle = 0
         engine.resolveAway(.keep)
+        #expect(engine.status == .running)
+        #expect(engine.elapsed == 15 * 60)
+    }
+
+    @Test func resumingAfterNoInputKeepsTheTime() {
+        let (_, engine, clock) = makeEngine()
+        engine.start()
+        clock.now += 15 * 60
+        clock.idle = 10 * 60 // reading, no input
+        engine.tick()
+        #expect(engine.awaySince != nil)
+        clock.idle = 0
+        engine.toggle() // space or "resume"
+        #expect(engine.awaySince == nil)
         #expect(engine.status == .running)
         #expect(engine.elapsed == 15 * 60)
     }
@@ -470,11 +485,13 @@ private func tempDir() -> URL {
 @Suite struct ForecastTests {
     @Test func steadyPaceWithoutCalibration() throws {
         let start = Date(timeIntervalSince1970: 1_800_000_000)
-        let r = try #require(Forecast.run(done: 4, estimate: 20, ratios: [], weeklyCounts: [4, 4, 4, 4], from: start))
+        let r = try #require(Forecast.run(done: 4, estimate: 20, ratios: [], weeklyWork: [4, 4, 4, 4], from: start))
         #expect(r.remaining.median == 16)
         #expect(r.finish.median == start.addingTimeInterval(28 * 86400))
+        // Identical weeks give no spread; the forecast must say it rests on little data.
         #expect(r.finish.early == r.finish.late)
         #expect(!r.calibrated)
+        #expect(r.littleData)
     }
 
     @Test func calibrationWidensAndShiftsTheRange() throws {
@@ -482,15 +499,38 @@ private func tempDir() -> URL {
         let c = try #require(Forecast.calibration(ratios: [1.0, 1.5, 2.0]))
         #expect(c.median == 1.5)
         #expect(c.suggested(for: 10) == 15)
-        let r = try #require(Forecast.run(done: 0, estimate: 10, ratios: c.ratios, weeklyCounts: [2, 5, 3, 0, 4], from: start))
+        let r = try #require(Forecast.run(done: 0, estimate: 10, ratios: c.ratios, weeklyWork: [2, 5, 3, 0, 4], from: start))
         #expect(r.remaining.low == 10 && r.remaining.high == 20)
         #expect(r.finish.early < r.finish.median && r.finish.median < r.finish.late)
-        #expect(r.calibrated)
+        #expect(r.calibrated && r.tasksCalibrated == 3)
+        #expect(r.littleData) // only 3 finished tasks
+        let solid = try #require(Forecast.run(done: 0, estimate: 10, ratios: [1, 1.2, 1.5, 1.5, 2],
+                                              weeklyWork: [2, 5, 3, 0, 4], from: start))
+        #expect(!solid.littleData)
     }
 
     @Test func needsHistory() {
-        #expect(Forecast.run(done: 0, estimate: 10, ratios: [], weeklyCounts: [1, 1], from: Date()) == nil)
+        #expect(Forecast.run(done: 0, estimate: 10, ratios: [], weeklyWork: [1, 1], from: Date()) == nil)
         #expect(Forecast.calibration(ratios: [1, 2]) == nil)
+    }
+
+    /// Two 50-minute intervals on a 25-minute task are four intervals of work,
+    /// and a skipped 10-minute one counts for its 10 minutes.
+    @MainActor @Test func countsWorkTimeNotIntervals() throws {
+        let store = Store(directory: tempDir())
+        let task = store.addTask(title: "thesis")
+        let now = Date()
+        for (minutes, outcome) in [(50, Outcome.completed), (50, .completed), (10, .skipped)] {
+            store.addInterval(FocusInterval(taskID: task.id, phase: .work, start: now.addingTimeInterval(-7200),
+                                            duration: Double(minutes * 60), outcome: outcome))
+        }
+        #expect(store.workedIntervals(for: task.id) == 4.4)
+        #expect(Forecast.weeklyWork(store: store, taskID: task.id, now: now).last == 4.4)
+        var estimated = task
+        estimated.estimatedIntervals = 10
+        store.update(estimated)
+        let r = try #require(Forecast.run(store: store, task: estimated, now: now))
+        #expect(r.remaining.median == 6) // 5.6 rounded up
     }
 }
 

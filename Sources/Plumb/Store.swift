@@ -122,6 +122,15 @@ final class Store {
         intervals.filter { $0.taskID == taskID && $0.phase == .work && $0.outcome == .completed }.count
     }
 
+    /// Seconds in one work interval of the task's work type.
+    func intervalLength(for taskID: UUID?) -> TimeInterval { Double(max(1, durations(for: taskID).work) * 60) }
+
+    /// All work time on a task, completed or skipped, in intervals of its work length.
+    func workedIntervals(for taskID: UUID?) -> Double {
+        let seconds = intervals.filter { $0.taskID == taskID && $0.phase == .work }.reduce(0) { $0 + $1.duration }
+        return seconds / intervalLength(for: taskID)
+    }
+
     var todayWorkCount: Int { completedWorkCount(on: Date()) }
 
     var todayTarget: Int { settings.target(on: Date()) }

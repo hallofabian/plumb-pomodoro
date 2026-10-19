@@ -101,7 +101,7 @@ final class Services: NSObject, UNUserNotificationCenterDelegate {
             Automation.run(.workPaused, store.settings)
         case .cameBack:
             let minutes = Int(Date().timeIntervalSince(engine.awaySince ?? Date()) / 60)
-            notify(title: L("Paused while you were away"),
+            notify(title: L("Paused: no input"),
                    body: L("%@ min without input. Keep that time, drop it, or end the interval there.", "\(minutes)"),
                    category: Note.away)
             showPanel?()

@@ -13,8 +13,8 @@ enum TE {
     /// Raised island on the canvas (inputs, panel body).
     static let surface = dynamic(0xFFFFFF, 0x18171C)
     static let ink = dynamic(0x000000, 0xF6F8F7)
-    /// Secondary text; still meets 4.5:1 on canvas in both themes.
-    static let inkSecondary = dynamic(0x6B6B6B, 0xB2B2B2)
+    /// Secondary text and placeholders; about 6:1 on canvas in both themes.
+    static let inkSecondary = dynamic(0x5E5E5E, 0xB2B2B2)
     /// Disabled text and quiet rules.
     static let inkMuted = dynamic(0xB2B2B2, 0x5C5B61)
     static let hairline = dynamic(0xE5E5E5, 0x2A292F)
@@ -32,7 +32,7 @@ enum TE {
     /// Large readouts: the timer, stat figures.
     static func numeral(_ size: CGFloat) -> Font { .system(size: size, weight: .thin).monospacedDigit() }
     /// Small uppercase codes, like the markings on a device.
-    static let code = Font.system(size: 10, weight: .light).monospacedDigit()
+    static let code = Font.system(size: 10, weight: .regular).monospacedDigit()
 
     // MARK: Spacing
 
@@ -266,20 +266,17 @@ extension View {
 /// Square slide switch. On: ink track with a canvas block on the right.
 struct TEToggleStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
+        // The row shows the label; here it is only spoken (see accessibilityRepresentation).
         Button { configuration.isOn.toggle() } label: {
-            HStack(spacing: TE.s2) {
-                configuration.label
-                Spacer(minLength: 0)
-                ZStack(alignment: configuration.isOn ? .trailing : .leading) {
-                    Rectangle().fill(configuration.isOn ? TE.ink : Color.clear)
-                    Rectangle().fill(configuration.isOn ? TE.canvas : TE.ink)
-                        .frame(width: 12, height: 12)
-                        .padding(3)
-                }
-                .frame(width: 36, height: 18)
-                .overlay(Rectangle().strokeBorder(TE.ink, lineWidth: 1))
-                .animation(.easeOut(duration: 0.12), value: configuration.isOn)
+            ZStack(alignment: configuration.isOn ? .trailing : .leading) {
+                Rectangle().fill(configuration.isOn ? TE.ink : Color.clear)
+                Rectangle().fill(configuration.isOn ? TE.canvas : TE.ink)
+                    .frame(width: 12, height: 12)
+                    .padding(3)
             }
+            .frame(width: 36, height: 18)
+            .overlay(Rectangle().strokeBorder(TE.ink, lineWidth: 1))
+            .animation(.easeOut(duration: 0.12), value: configuration.isOn)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

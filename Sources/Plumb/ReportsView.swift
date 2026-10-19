@@ -104,7 +104,7 @@ struct ReportsView: View {
                     .help(L("Days in a row at your daily goal; rest days (goal 0) don't break it."))
                 Rule(vertical: true)
                 cell(Figure(label: L("estimates"), value: Forecast.calibration(store: store).map { numberText($0.median) + "×" } ?? "–", size: 34))
-                    .help(L("Actual ÷ estimated intervals, median over all completed tasks with an estimate. Needs 3 such tasks."))
+                    .help(L("Work time ÷ estimate, median over all completed tasks with an estimate. Needs 3 such tasks."))
             }
             .fixedSize(horizontal: false, vertical: true)
             Rule()

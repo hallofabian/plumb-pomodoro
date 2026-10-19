@@ -95,7 +95,10 @@ final class TimerEngine {
 
     // MARK: Controls
 
-    func toggle() { isRunning ? pause() : start() }
+    /// Resuming after "no input" keeps that time: reading or thinking is work too.
+    func toggle() {
+        if awaySince != nil { resolveAway(.keep) } else { isRunning ? pause() : start() }
+    }
 
     func start() {
         guard status != .running else { return }

@@ -238,7 +238,7 @@ struct AppSettings: Codable, Equatable {
     /// A 0 marks a rest day, which does not break a streak.
     var weekdayTargets: [Int]?
     var awayDetection = true
-    var awayMinutes = 5
+    var awayMinutes = 10
     var breakScreen = false
     var extendMinutes = 5
     /// First launch set up default shortcuts and offered the Be Focused import.

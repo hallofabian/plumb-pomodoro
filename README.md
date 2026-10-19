@@ -1,8 +1,8 @@
 # plumb · Pomodoro timer for macOS
 
 **plumb** is a free, open-source Pomodoro timer and focus timer for the Mac menu bar.
-It keeps honest time (it notices when you walk away), learns how far your estimates are
-off, and forecasts when a task will be done. Local-first: no account, no subscription;
+It keeps honest time (it notices when there is no input and asks instead of assuming),
+learns how far your estimates are off, and forecasts when a task will be done. Local-first: no account, no subscription;
 your data stays in a folder you control and syncs through any cloud folder you like.
 
 Work intervals and breaks, tasks, daily goals and streaks, reports, website and app
@@ -23,7 +23,8 @@ a one-line note per interval.
 <img src="docs/screenshots/today.png" alt="Today view with timeline and interval log">
 
 **Forecast**: from your real pace and how far your past estimates were off, plumb
-predicts when a task will likely be done, with an 80% range.
+predicts when a task will likely be done, with an 80% range, what it is based on, and a
+note when there is little data behind it.
 
 <img src="docs/screenshots/task-forecast.png" alt="Task detail with estimate calibration and finish-date forecast">
 
@@ -32,8 +33,9 @@ and per task.
 
 <img src="docs/screenshots/reports.png" alt="Reports for this month">
 
-**Honest time**: step away and the timer pauses at the moment you left, then asks what to
-do with that time.
+**Honest time**: after a stretch without keyboard or mouse input, the timer pauses at the
+moment input stopped and asks what to do with that time. No input is not the same as no
+work, so keeping it is the default.
 
 <img src="docs/screenshots/panel-away.png" width="300" alt="Panel asking whether to keep, drop or end the time away">
 
@@ -65,11 +67,12 @@ numerals, lowercase labels. A single amber lamp marks live state. Tokens and com
 - Daily goal (optionally per weekday, 0 = rest day), streak, goal adjustable from the panel
 - Menu bar panel: keyboard control (space, s, e, ↑↓, n), −/+ or scroll on the icon to set the next interval's length
 - "+5 min" while working and for ten minutes after an interval ended (reopens it instead of starting a new one)
-- Honest time: pauses itself when there is no input for N minutes and asks on return whether to keep, drop or end
+- Honest time: pauses itself after N minutes without input (10 by default) and asks on return whether to keep, drop or end; resuming keeps the time
 - Interval notes: one line after each work interval, also by replying to the notification
 - Tasks with notes, estimates, due dates, drag-to-reorder; "today" view with a timeline and log
 - Add and correct intervals by hand; undo for deletions and completions (⌘Z)
-- Estimate calibration ("you usually need 1.4×") and a Monte Carlo finish-date forecast per task
+- Estimate calibration ("you usually need 1.4×") and a Monte Carlo finish-date forecast per task,
+  measured in work time so extended, short and skipped intervals count for what they lasted
 - Reports: work time, intervals, skipped, streak, estimate ratio, per-day/week/month chart, per-task breakdown
 - Work types: per-task durations (example: 50/10)
 - Optional full-screen break card; synthesized device sounds; global hotkeys

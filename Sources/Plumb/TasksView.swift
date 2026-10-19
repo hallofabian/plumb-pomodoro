@@ -54,9 +54,9 @@ struct TasksView: View {
             VStack(alignment: .leading, spacing: TE.s1) {
                 TESegmented(selection: Binding(get: { mode }, set: { mode = $0; if $0 == .today { selection = nil } }),
                             options: [(.today, L("today")), (.todo, L("to do")), (.completed, L("done"))])
-                TextField("", text: $search, prompt: Text(L("search")).foregroundStyle(TE.inkMuted)).teField()
+                TextField("", text: $search, prompt: Text(L("search")).foregroundStyle(TE.inkSecondary)).teField()
                 if mode != .completed {
-                    TextField("", text: $newTask, prompt: Text(L("new task, press return")).foregroundStyle(TE.inkMuted))
+                    TextField("", text: $newTask, prompt: Text(L("new task, press return")).foregroundStyle(TE.inkSecondary))
                         .teField()
                         .onSubmit(addTask)
                 }
@@ -357,7 +357,7 @@ private struct TaskDetail: View {
                 VStack(alignment: .leading, spacing: TE.s1) {
                     Code(L("task"))
                     TextField("", text: binding(\.title, ""), prompt: Text(L("title"))).teField(large: true)
-                    TextField("", text: binding(\.note, ""), prompt: Text(L("notes")).foregroundStyle(TE.inkMuted), axis: .vertical)
+                    TextField("", text: binding(\.note, ""), prompt: Text(L("notes")).foregroundStyle(TE.inkSecondary), axis: .vertical)
                         .lineLimit(3...8)
                         .teField()
                 }
@@ -448,10 +448,13 @@ private struct ForecastSection: View {
         TESection(title: L("forecast"), note: note) {
             if let r = Forecast.run(store: store, task: task) {
                 VStack(alignment: .leading, spacing: TE.s2) {
+                    if r.littleData, r.remaining.median > 0 { Code(L("rough guess · little data so far"), color: TE.ink) }
                     HStack(alignment: .firstTextBaseline, spacing: TE.s3) {
                         Figure(label: L("likely done"), value: r.remaining.median == 0 ? L("now") : short(r.finish.median), size: 40)
                         Figure(label: L("intervals left"), value: r.remaining.low == r.remaining.high
                                ? "\(r.remaining.median)" : "\(r.remaining.low)–\(r.remaining.high)", size: 40)
+                            .help(L("Counted as work time in %@-minute intervals, so extended, short and skipped intervals count for what they lasted.",
+                                    "\(store.durations(for: task.id).work)"))
                         Figure(label: L("pace / week"), value: numberText(r.weeklyPace), size: 40)
                     }
                     if r.remaining.median > 0 { RangeStrip(result: r) }
@@ -460,18 +463,24 @@ private struct ForecastSection: View {
             } else {
                 Text(task.estimatedIntervals == nil
                      ? L("Set an estimate above to see when this task will likely be done.")
-                     : L("A forecast appears after at least 3 completed intervals on this task."))
+                     : L("A forecast appears after about 3 intervals of work on this task."))
                     .font(TE.body()).foregroundStyle(TE.inkSecondary)
                     .padding(.vertical, 10)
             }
         }
     }
 
+    /// Range, what it rests on, and what it leaves out.
     private var note: String? {
         guard let r = Forecast.run(store: store, task: task), r.remaining.median > 0 else { return nil }
-        let range = L("80%% chance between %@ and %@.", short(r.finish.early), short(r.finish.late))
-        let basis = r.weeksSampled == 1 ? L("Based on your last week on this task") : L("Based on your last %@ weeks on this task", "\(r.weeksSampled)")
-        return range + " " + basis + (r.calibrated ? L(" and how far your estimates were off before.") : L("; it gets sharper once 3 tasks with estimates are done."))
+        let range = short(r.finish.early) == short(r.finish.late)
+            ? L("Your weeks on this task were all alike, so the forecast shows no spread; real weeks vary more.")
+            : L("80%% chance between %@ and %@.", short(r.finish.early), short(r.finish.late))
+        let weeks = r.weeksSampled == 1 ? L("Based on 1 week of work on this task") : L("Based on %@ weeks of work on this task", "\(r.weeksSampled)")
+        let tasks = r.calibrated ? L(" and %@ finished tasks with an estimate.", "\(r.tasksCalibrated)")
+            : L("; your estimate is taken as it is until 3 tasks with an estimate are done.")
+        let assumption = L("It assumes your pace stays like those weeks; holidays and changed plans are not in it.")
+        return [range, weeks + tasks, assumption].joined(separator: " ")
     }
 
     private func short(_ d: Date) -> String { d.dayMonthText }
@@ -605,7 +614,7 @@ private struct IntervalEditor: View {
                             .frame(width: 200)
                     }
                 }
-                TextField("", text: $note, prompt: Text(L("note: what got done")).foregroundStyle(TE.inkMuted)).teField()
+                TextField("", text: $note, prompt: Text(L("note: what got done")).foregroundStyle(TE.inkSecondary)).teField()
                 if let problem { Code(problem, color: TE.ink) }
             }
             .padding(TE.s3)

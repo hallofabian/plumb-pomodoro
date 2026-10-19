@@ -52,7 +52,7 @@ struct TimerPopover: View {
         return VStack(alignment: .leading, spacing: TE.s1) {
             HStack(spacing: 6) {
                 LED(on: true)
-                Code(L("paused while away"), color: TE.ink)
+                Code(L("paused · no input"), color: TE.ink)
             }
             Text(L("No input since %@, %@ min ago. What should happen with that time?", since.timeText, "\(minutes)"))
                 .font(TE.body())
@@ -60,7 +60,7 @@ struct TimerPopover: View {
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: TE.s1) {
                 Button(L("keep it")) { engine.resolveAway(.keep) }.teButton(.primary)
-                    .help(L("Count the %@ min as work and continue", "\(minutes)"))
+                    .help(L("Count the %@ min as work and continue (space)", "\(minutes)"))
                 Button(L("drop it")) { engine.resolveAway(.drop) }.teButton()
                     .help(L("Ignore the time away and continue"))
                 Button(L("end there")) { engine.resolveAway(.end) }.teButton()
@@ -101,7 +101,7 @@ struct TimerPopover: View {
     private func notePrompt(_ interval: FocusInterval) -> some View {
         VStack(alignment: .leading, spacing: TE.s1) {
             Code(L("what did you get done? · %@", "\(store.title(for: interval.taskID))"))
-            TextField("", text: $note, prompt: Text(L("one line, then return")).foregroundStyle(TE.inkMuted))
+            TextField("", text: $note, prompt: Text(L("one line, then return")).foregroundStyle(TE.inkSecondary))
                 .teField()
                 .focused($focus, equals: .note)
                 .onSubmit {
@@ -117,7 +117,7 @@ struct TimerPopover: View {
             Code(L("task"))
             TEMenu(selection: Binding(get: { engine.taskID }, set: { engine.select(taskID: $0) }),
                    options: taskOptions, minWidth: 274)
-            TextField("", text: $newTask, prompt: Text(L("add a task and press return")).foregroundStyle(TE.inkMuted))
+            TextField("", text: $newTask, prompt: Text(L("add a task and press return")).foregroundStyle(TE.inkSecondary))
                 .teField()
                 .focused($focus, equals: .newTask)
                 .onSubmit(addTask)
@@ -152,8 +152,9 @@ struct TimerPopover: View {
             Button(L("skip"), action: engine.skip)
                 .teButton()
                 .fixedSize()
-                .help(L("End the %@ now and move on", "\(engine.phase.label)"))
-            Button(L("stop"), action: engine.stop)
+                .help(engine.phase == .work ? L("End this work interval now, keep it as skipped, and go to the break")
+                      : L("End the break now and go to work"))
+            Button(L("reset"), action: engine.stop)
                 .teButton()
                 .fixedSize()
                 .disabled(engine.status == .idle)
@@ -234,7 +235,7 @@ struct TimerPopover: View {
     private var statusLabel: String {
         switch engine.status {
         case .running: L("running")
-        case .paused: engine.awaySince != nil ? L("away") : L("paused")
+        case .paused: engine.awaySince != nil ? L("no input") : L("paused")
         case .idle: L("%@ min", "\(Int(engine.duration / 60))")
         }
     }
@@ -336,7 +337,7 @@ private struct RoundMeter: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Code(L("cycle"))
+            Code(L("to long break"))
             ForEach(0..<total, id: \.self) { i in
                 Rectangle()
                     .fill(i < done ? TE.ink : Color.clear)
@@ -364,7 +365,7 @@ private struct DailyGoal: View {
             SquareStep("−", label: L("Lower today's goal")) { services.commands.setTodayGoal(max(1, target - 1)) }.disabled(target <= 1)
             SquareStep("+", label: L("Raise today's goal")) { services.commands.setTodayGoal(min(30, target + 1)) }.disabled(target >= 30)
             if streak > 1 {
-                Code("· " + L("%@d", "\(streak)"), color: TE.ink).help(L("%@ days in a row at goal", "\(streak)"))
+                Code("· " + L("streak %@", "\(streak)"), color: TE.ink).help(L("%@ days in a row at goal", "\(streak)"))
             }
         }
         .help(L("Today's goal: %@ work intervals", "\(target)"))

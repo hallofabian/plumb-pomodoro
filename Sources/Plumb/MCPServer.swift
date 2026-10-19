@@ -66,7 +66,7 @@ struct MCPServer {
                                      "enum": ReportPeriod.allCases.filter { $0 != .custom }.map(\.rawValue),
                                      "default": "this week"]], readOnly: true),
         Tool(name: "get_forecast", command: "forecast",
-             description: "When a task will likely be done: remaining intervals and finish dates (10th/50th/90th percentile) from the user's real pace and estimate accuracy.",
+             description: "When a task will likely be done: remaining intervals and finish dates (10th/50th/90th percentile) from the user's real pace and estimate accuracy. Measured in work time; little_data marks a rough guess from few weeks or few finished tasks.",
              properties: ["task": task], required: ["task"], readOnly: true),
         Tool(name: "set_daily_goal", command: "set_goal", description: "Set today's goal in work intervals (1–30).",
              properties: ["goal": ["type": "integer", "minimum": 1, "maximum": 30]], required: ["goal"]),
@@ -241,7 +241,7 @@ enum CLI {
             var line = "\(s["phase"] ?? "") · \(s["status"] ?? "") · \(formatClock(TimeInterval(remaining))) · \(s["task"] ?? "")"
             line += " · today \(today["done"] ?? 0)/\(today["goal"] ?? 0)"
             if let streak = s["streak_days"] as? Int, streak > 0 { line += " · streak \(streak)" }
-            if s["away_since"] != nil { line += " · paused while away" }
+            if s["away_since"] != nil { line += " · paused, no input" }
             return line
         }
         if command == "list_tasks", let tasks = result as? [[String: Any]] {

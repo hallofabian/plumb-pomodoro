@@ -108,9 +108,9 @@ private struct GeneralSettings: View {
                 TERow(label: L("Extend button adds")) { TEStepper(value: setting(store, \.extendMinutes), range: 1...30, unit: L("min")) }
             }
             TESection(title: L("honest time"),
-                      note: L("Without keyboard or mouse input, the timer pauses itself at the moment you left. When you're back, choose to keep that time, drop it, or end the interval there. This also catches a Mac that slept through an interval.")) {
-                TEToggleRow(label: L("Pause work when I'm away"), isOn: setting(store, \.awayDetection))
-                TERow(label: L("Away after")) {
+                      note: L("Without keyboard or mouse input, the timer pauses at the moment input stopped and asks when you're back: keep that time, drop it, or end the interval there. No input is not the same as no work: reading, thinking and writing by hand count too, so keeping the time is the default (space). Set the time above your usual stretches away from the keyboard. This also catches a Mac that slept through an interval.")) {
+                TEToggleRow(label: L("Pause when there's no input"), isOn: setting(store, \.awayDetection))
+                TERow(label: L("No input for")) {
                     TEStepper(value: setting(store, \.awayMinutes), range: 1...30, unit: "min")
                 }
                 .disabled(!store.settings.awayDetection)
@@ -309,7 +309,7 @@ private struct BlockingSettings: View {
                     }
                 }
                 HStack(spacing: TE.s1) {
-                    TextField("", text: $newSite, prompt: Text("example.com").foregroundStyle(TE.inkMuted))
+                    TextField("", text: $newSite, prompt: Text("example.com").foregroundStyle(TE.inkSecondary))
                         .teField()
                         .onSubmit { addSite(to: sitesKey) }
                     Button(L("add")) { addSite(to: sitesKey) }
@@ -366,7 +366,7 @@ private struct AutomationSettings: View {
                             TextField("", text: Binding(
                                 get: { store.settings.shortcuts[event.rawValue] ?? "" },
                                 set: { store.settings.shortcuts[event.rawValue] = $0.isEmpty ? nil : $0 }
-                            ), prompt: Text(L("shortcut name")).foregroundStyle(TE.inkMuted))
+                            ), prompt: Text(L("shortcut name")).foregroundStyle(TE.inkSecondary))
                             .teField()
                             .frame(width: 200)
                             Button(L("test")) { Automation.run(event, store.settings) }
@@ -574,7 +574,7 @@ private struct AmbientSection: View {
             }
             if source.kind == .custom {
                 TERow(label: L("Stream URL")) {
-                    TextField("", text: $customURL, prompt: Text("https://…").foregroundStyle(TE.inkMuted))
+                    TextField("", text: $customURL, prompt: Text("https://…").foregroundStyle(TE.inkSecondary))
                         .teField()
                         .frame(width: 280)
                         .onSubmit {

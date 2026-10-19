@@ -203,7 +203,8 @@ final class CommandCenter {
     }
 
     private func forecast(_ task: FocusTask) -> [String: Any] {
-        var d: [String: Any] = ["task": task.title, "completed_intervals": store.completedWorkCount(for: task.id)]
+        var d: [String: Any] = ["task": task.title, "completed_intervals": store.completedWorkCount(for: task.id),
+                                "worked_intervals": Self.decimal(store.workedIntervals(for: task.id))]
         if let e = task.estimatedIntervals { d["estimate"] = e }
         if let c = Forecast.calibration(store: store) {
             d["estimate_ratio"] = Self.decimal(c.median, places: 2)
@@ -213,7 +214,7 @@ final class CommandCenter {
         guard let r = Forecast.run(store: store, task: task) else {
             d["forecast"] = task.estimatedIntervals == nil
                 ? "No estimate set. Add an estimate to get a finish date."
-                : "Not enough history yet: needs at least 3 completed intervals on this task."
+                : "Not enough history yet: needs about 3 intervals of work on this task."
             return d
         }
         d["forecast"] = [
@@ -221,7 +222,8 @@ final class CommandCenter {
             "finish": ["p10": Self.day.string(from: r.finish.early), "p50": Self.day.string(from: r.finish.median),
                        "p90": Self.day.string(from: r.finish.late)],
             "weekly_pace": Self.decimal(r.weeklyPace), "weeks_sampled": r.weeksSampled,
-            "calibrated": r.calibrated,
+            "calibrated": r.calibrated, "little_data": r.littleData,
+            "unit": "work time in intervals of \(store.durations(for: task.id).work) min",
         ]
         return d
     }

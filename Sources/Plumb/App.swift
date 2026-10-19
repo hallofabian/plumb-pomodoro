@@ -174,7 +174,7 @@ final class StatusBarController: NSObject {
         menu.addItem(.separator())
         menu.addItem(action(engine.isRunning ? L("Pause") : (engine.status == .paused ? L("Resume") : L("Start %@", engine.phase.title))) { engine.toggle() })
         menu.addItem(action(L("Skip %@", engine.phase.title)) { engine.skip() })
-        if engine.status != .idle { menu.addItem(action(L("Stop")) { engine.stop() }) }
+        if engine.status != .idle { menu.addItem(action(L("Reset")) { engine.stop() }) }
         menu.addItem(.separator())
         menu.addItem(action(L("Tasks…")) { Windows.shared.show(.tasks) })
         menu.addItem(action(L("Reports…")) { Windows.shared.show(.reports) })
